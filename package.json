@@ -1,0 +1,12 @@
+{
+  "name": "chamundeshwari-home-sweets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MERN e-commerce site for Chamundeshwari Home Sweets & Hots, with a separate owner admin panel",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server"
+  }
+}

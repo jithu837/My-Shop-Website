@@ -1,0 +1,94 @@
+@import "./tokens.css";
+
+.hero {
+  background: linear-gradient(160deg, var(--color-maroon) 0%, var(--color-maroon-deep) 100%);
+  padding: 76px 0;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(201,138,44,0.18) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.5;
+}
+
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1.3fr 0.9fr;
+  align-items: center;
+  gap: 40px;
+  position: relative;
+}
+
+.hero-copy h1 { color: var(--color-cream); font-size: 3rem; margin-top: 10px; }
+.hero-copy p { color: rgba(251,243,231,0.82); font-size: 1.05rem; max-width: 480px; }
+.hero-copy .eyebrow { color: var(--color-brass-light); }
+
+.hero-actions { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+
+.hero-plate { display: flex; justify-content: center; }
+.hero-plate-ring {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 6px solid var(--color-brass);
+  background: radial-gradient(circle at 35% 30%, var(--color-brass-light), var(--color-brass) 65%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 10px rgba(251,243,231,0.06), var(--shadow-lift);
+}
+.hero-plate-ring span {
+  font-family: var(--font-display);
+  font-size: 3.2rem;
+  color: var(--color-maroon-deep);
+}
+.hero-plate-ring small {
+  font-family: var(--font-utility);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  color: var(--color-maroon-deep);
+}
+
+.offer-strip {
+  background: var(--color-brass);
+  color: var(--color-maroon-deep);
+  padding: 12px 0;
+  overflow-x: auto;
+}
+.offer-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--font-utility);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+.offer-strip-item {
+  background: rgba(43,27,20,0.08);
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+.section-heading { margin-bottom: 28px; }
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.section-cta { text-align: center; margin-top: 40px; }
+
+@media (max-width: 980px) {
+  .hero-inner { grid-template-columns: 1fr; text-align: center; }
+  .hero-copy p { margin-left: auto; margin-right: auto; }
+  .hero-actions { justify-content: center; }
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .product-grid { grid-template-columns: 1fr; }
+  .hero-plate-ring { width: 170px; height: 170px; }
+}

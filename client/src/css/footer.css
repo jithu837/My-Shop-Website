@@ -1,0 +1,40 @@
+@import "./tokens.css";
+
+.footer {
+  background: var(--color-maroon-deep);
+  color: var(--color-cream);
+  margin-top: 60px;
+}
+
+.footer-inner {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 32px;
+  padding: 48px 24px;
+}
+
+.footer h3 { color: var(--color-brass-light); font-size: 1.2rem; }
+.footer h4 {
+  font-family: var(--font-utility);
+  color: var(--color-brass-light);
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+.footer p { color: rgba(251,243,231,0.75); font-size: 0.92rem; }
+.footer ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.footer ul a { color: rgba(251,243,231,0.8); font-size: 0.92rem; }
+.footer ul a:hover { color: var(--color-brass-light); }
+
+.footer-bottom {
+  border-top: 1px solid rgba(251,243,231,0.15);
+  padding: 18px 24px;
+  font-size: 0.8rem;
+  color: rgba(251,243,231,0.55);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .footer-inner { grid-template-columns: 1fr; }
+}

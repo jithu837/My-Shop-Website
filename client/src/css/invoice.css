@@ -1,0 +1,63 @@
+@import "./tokens.css";
+
+.invoice-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(63,107,61,0.1);
+  border: 1px solid rgba(63,107,61,0.3);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+}
+.invoice-success-icon {
+  background: var(--color-success);
+  color: white;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.invoice-success-banner h2 { margin-bottom: 2px; font-size: 1.3rem; }
+.invoice-success-banner p { margin: 0; }
+
+.invoice { padding: 32px; max-width: 720px; margin: 0 auto; }
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--color-brass);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.invoice-header h3 { margin-bottom: 2px; }
+.invoice-header-right { text-align: right; font-size: 0.85rem; font-family: var(--font-utility); }
+
+.invoice-customer { font-family: var(--font-utility); font-size: 0.9rem; margin-bottom: 24px; color: var(--color-ink-soft); }
+
+.invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.invoice-table th, .invoice-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(107,30,35,0.12);
+  font-family: var(--font-utility);
+  font-size: 0.88rem;
+}
+.invoice-table th { color: var(--color-maroon); }
+
+.invoice-totals { max-width: 260px; margin-left: auto; font-family: var(--font-utility); }
+.invoice-totals > div { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; }
+.invoice-grand-total { font-weight: 700; font-size: 1.1rem; color: var(--color-maroon); border-top: 1px dashed rgba(107,30,35,0.25); margin-top: 4px; padding-top: 8px !important; }
+
+.invoice-footer { text-align: center; margin-top: 24px; color: var(--color-ink-soft); font-size: 0.85rem; }
+
+.invoice-actions { display: flex; gap: 14px; justify-content: center; margin-top: 28px; }
+
+@media print {
+  .navbar, .footer, .invoice-success-banner, .invoice-actions { display: none !important; }
+  body { background: white; }
+  .invoice { box-shadow: none; }
+}

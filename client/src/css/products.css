@@ -1,0 +1,45 @@
+@import "./tokens.css";
+
+.products-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.products-toolbar input[type="search"] {
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(107,30,35,0.25);
+  min-width: 260px;
+  font-size: 0.9rem;
+  background: var(--color-white);
+}
+.products-toolbar input[type="search"]:focus {
+  outline: 2px solid rgba(201,138,44,0.4);
+  border-color: var(--color-brass);
+}
+
+.products-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.products-tab {
+  background: var(--color-white);
+  border: 1.5px solid rgba(107,30,35,0.2);
+  color: var(--color-ink-soft);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: var(--font-utility);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.products-tab.is-active {
+  background: var(--color-maroon);
+  border-color: var(--color-maroon);
+  color: var(--color-cream);
+}
+
+@media (max-width: 720px) {
+  .products-toolbar input[type="search"] { min-width: 0; width: 100%; }
+}

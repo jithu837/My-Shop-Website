@@ -1,0 +1,18 @@
+@import "./tokens.css";
+
+.about-wrap { max-width: 760px; }
+.about-wrap p { font-size: 1.02rem; color: var(--color-ink-soft); }
+
+.about-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 32px;
+}
+.about-value { padding: 24px; }
+.about-value h3 { font-size: 1.1rem; }
+.about-value p { font-size: 0.9rem; margin: 0; }
+
+@media (max-width: 720px) {
+  .about-values { grid-template-columns: 1fr; }
+}

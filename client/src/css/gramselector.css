@@ -1,0 +1,30 @@
+@import "./tokens.css";
+
+.gram-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid var(--color-maroon);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.gram-btn {
+  background: var(--color-cream-deep);
+  color: var(--color-maroon);
+  width: 34px; height: 34px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.gram-btn:hover:not(:disabled) { background: var(--color-brass-light); }
+.gram-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.gram-value {
+  min-width: 68px;
+  text-align: center;
+  font-family: var(--font-utility);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-ink);
+}

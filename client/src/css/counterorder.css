@@ -1,0 +1,41 @@
+@import "./tokens.css";
+
+.counter-page { padding-bottom: 110px; position: relative; min-height: 100vh; }
+
+.counter-subtext { color: var(--color-ink-soft); margin-top: 6px; }
+
+/* Sticky bottom cart bar so the "Review & Pay" action is always reachable while browsing */
+.counter-cart-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: var(--color-maroon-deep);
+  color: var(--color-cream);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-utility);
+  font-weight: 600;
+  z-index: 40;
+  box-shadow: 0 -6px 20px rgba(43,27,20,0.25);
+}
+.counter-cart-bar .btn { padding: 10px 20px; }
+
+.counter-pay { display: flex; justify-content: center; }
+.counter-pay-card { padding: 32px; width: 100%; max-width: 460px; }
+.counter-pay-card h2 { margin-bottom: 18px; }
+.counter-pay-card h3 { margin-top: 22px; margin-bottom: 10px; }
+.checkout-summary-row-list { margin-bottom: 10px; }
+.counter-back { width: 100%; margin-top: 10px; }
+
+.counter-done { display: flex; justify-content: center; }
+.counter-done-card { text-align: center; padding: 40px; max-width: 440px; }
+.counter-done-card h2 { font-size: 2rem; margin: 6px 0 0; }
+.counter-done-total { font-family: var(--font-utility); font-weight: 700; font-size: 1.3rem; color: var(--color-brass); margin-bottom: 10px; }
+.counter-done-hint { color: var(--color-ink-soft); margin-bottom: 18px; }
+.counter-done-items { text-align: left; margin-bottom: 24px; border-top: var(--border-scallop); padding-top: 14px; }
+.counter-done-row { display: flex; justify-content: space-between; font-family: var(--font-utility); font-size: 0.88rem; margin-bottom: 8px; }
+
+@media (max-width: 640px) {
+  .counter-cart-bar { padding: 14px 16px; }
+}

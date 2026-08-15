@@ -1,0 +1,31 @@
+:root {
+  /* Palette - inspired by brass serving trays, kumkum maroon, marigold and banana leaf */
+  --color-cream: #FBF3E7;
+  --color-cream-deep: #F3E4CC;
+  --color-maroon: #6B1E23;
+  --color-maroon-deep: #4A1418;
+  --color-brass: #C98A2C;
+  --color-brass-light: #E7B65C;
+  --color-terracotta: #B5541D;
+  --color-leaf: #4E6B3D;
+  --color-ink: #2B1B14;
+  --color-ink-soft: #5A4638;
+  --color-white: #FFFDF9;
+  --color-danger: #A3341F;
+  --color-success: #3F6B3D;
+
+  /* Type */
+  --font-display: "Yeseva One", serif;
+  --font-body: "Rasa", serif;
+  --font-utility: "Mukta", sans-serif;
+
+  /* Layout */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 22px;
+  --shadow-tray: 0 6px 18px rgba(43, 27, 20, 0.14);
+  --shadow-lift: 0 12px 30px rgba(43, 27, 20, 0.20);
+  --border-scallop: 2px dashed rgba(107, 30, 35, 0.25);
+
+  --container-max: 1180px;
+}

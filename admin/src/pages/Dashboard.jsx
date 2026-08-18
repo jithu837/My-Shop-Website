@@ -1,15 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api, { imageUrl } from "../services/api.js";
+import useOrderStream from "../hooks/useOrderStream.js";
 import "../css/admin.css";
 
 const Dashboard = () => {
   const [summary, setSummary] = useState(null);
   const [graph, setGraph] = useState([]);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api.get("/dashboard/summary").then((res) => setSummary(res.data));
     api.get("/dashboard/revenue-graph").then((res) => setGraph(res.data));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Auto-refresh dashboard stats whenever a new order is placed.
+  useOrderStream(load);
 
   if (!summary) return <div className="spinner" />;
 

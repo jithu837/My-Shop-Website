@@ -1,14 +1,5 @@
 @import "./tokens.css";
 
-/* ---- Login ---- */
-.admin-login {
-  min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(160deg, var(--color-maroon) 0%, var(--color-maroon-deep) 100%);
-  padding: 24px;
-}
-.admin-login-card { padding: 40px; width: 100%; max-width: 380px; }
-.admin-login-sub { color: var(--color-ink-soft); font-size: 0.85rem; margin-bottom: 24px; }
 
 /* ---- Shell ---- */
 .admin-shell { display: flex; min-height: 100vh; background: var(--color-cream); }

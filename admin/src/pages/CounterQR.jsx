@@ -3,10 +3,10 @@ import { QRCodeSVG } from "qrcode.react";
 import "../css/admin.css";
 
 // Prints/downloads the QR code customers scan at the counter.
-// It just points to this site's /order page — no app, no login needed.
+// Point it to the live public website so a scan opens the shop homepage.
 const CounterQR = () => {
   const qrRef = useRef(null);
-  const orderUrl = `${window.location.origin}/order`;
+  const siteUrl = (import.meta.env.VITE_PUBLIC_SITE_URL || "https://your-site-name.vercel.app").replace(/\/$/, "");
 
   const downloadQR = () => {
     const svg = qrRef.current.querySelector("svg");
@@ -27,7 +27,7 @@ const CounterQR = () => {
       URL.revokeObjectURL(url);
       const pngUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-      link.download = "chamundeshwari-counter-qr.png";
+      link.download = "shop-website-qr.png";
       link.href = pngUrl;
       link.click();
     };
@@ -42,9 +42,9 @@ const CounterQR = () => {
 
       <div className="admin-panel" style={{ padding: 32, maxWidth: 480 }}>
         <p style={{ marginBottom: 20, color: "var(--color-ink-soft)" }}>
-          Print this and place it at the counter. Customers scan it with their phone camera —
-          it opens your ordering page directly, no app needed. They add items, pay by cash or
-          UPI, and get an order number to show you.
+          Print this and place it at the counter. Customers scan it with their phone camera — it
+          opens your public website directly, no app needed. From there they can browse products,
+          add to cart, and place an order.
         </p>
 
         <div
@@ -58,15 +58,36 @@ const CounterQR = () => {
             marginBottom: 20,
           }}
         >
-          <QRCodeSVG value={orderUrl} size={260} bgColor="#FFFDF9" fgColor="#2B1B14" />
+          <QRCodeSVG value={siteUrl} size={260} bgColor="#FFFDF9" fgColor="#2B1B14" />
         </div>
 
-        <p style={{ fontFamily: "var(--font-utility)", fontWeight: 600, marginBottom: 20, wordBreak: "break-all" }}>
-          {orderUrl}
+        <p
+          style={{
+            fontFamily: "var(--font-utility)",
+            fontWeight: 700,
+            marginBottom: 18,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+            color: "var(--color-ink-deep)",
+          }}
+        >
+          Scan to open shop
+        </p>
+
+        <p
+          style={{
+            fontFamily: "var(--font-utility)",
+            fontWeight: 600,
+            marginBottom: 20,
+            wordBreak: "break-all",
+            color: "var(--color-ink-soft)",
+          }}
+        >
+          {siteUrl}
         </p>
 
         <button className="btn btn-primary" onClick={downloadQR}>
-          Download PNG (for printing)
+          Download QR PNG
         </button>
       </div>
     </div>

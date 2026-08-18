@@ -1,5 +1,6 @@
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import { emitNewOrder } from "../utils/orderStream.js";
 
 const genOrderNumber = () => {
   const rand = Math.floor(1000 + Math.random() * 9000);
@@ -79,6 +80,9 @@ export const createOrder = async (req, res) => {
       paymentMethod,
       paymentStatus: "Pending",
     });
+
+    // Push real-time notification to every connected admin tab.
+    emitNewOrder(order);
 
     res.status(201).json(order);
   } catch (err) {

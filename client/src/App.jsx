@@ -14,24 +14,16 @@ import OrderSuccess from "./pages/OrderSuccess.jsx";
 import About from "./pages/About.jsx";
 import CounterOrder from "./pages/CounterOrder.jsx";
 
-import AdminLayout from "./admin/AdminLayout.jsx";
-import Dashboard from "./admin/Dashboard.jsx";
-import ProductManage from "./admin/ProductManage.jsx";
-import OrdersManage from "./admin/OrdersManage.jsx";
-import FeedbackView from "./admin/FeedbackView.jsx";
-import CounterQR from "./admin/CounterQR.jsx";
-
 function App() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
   // /order is the page the shop's counter QR code opens - kept minimal
   // (no navbar/footer clutter) so it feels like a quick ordering kiosk.
   const isCounterRoute = location.pathname.startsWith("/order");
 
   return (
     <>
-      {!isAdminRoute && !isCounterRoute && <Navbar />}
-      {!isAdminRoute && !isCounterRoute && <CartPopup />}
+      {!isCounterRoute && <Navbar />}
+      {!isCounterRoute && <CartPopup />}
 
       <Routes>
         {/* Customer site */}
@@ -46,19 +38,10 @@ function App() {
         {/* In-shop QR ordering — what customers see when they scan the counter QR code */}
         <Route path="/order" element={<CounterOrder />} />
 
-        {/* Admin site — login removed, direct access */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="products" element={<ProductManage />} />
-          <Route path="orders" element={<OrdersManage />} />
-          <Route path="feedback" element={<FeedbackView />} />
-          <Route path="qr" element={<CounterQR />} />
-        </Route>
-
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {!isAdminRoute && !isCounterRoute && <Footer />}
+      {!isCounterRoute && <Footer />}
     </>
   );
 }

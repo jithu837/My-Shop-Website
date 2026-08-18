@@ -5,10 +5,10 @@ import api from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
 import "../css/checkout.css";
 
-// Shop's UPI details - edit here if the UPI ID or payee name ever changes
-const UPI_ID = "7816096147@naviaxis";
-const UPI_PAYEE_NAME = "G JITHENDRA KUMAR";
-const SHOP_NOTE = "Chamundeshwari Home Sweets";
+// Shop's UPI details — set in client/.env so you never need to touch source code
+const UPI_ID = import.meta.env.VITE_UPI_ID || "7816096147@naviaxis";
+const UPI_PAYEE_NAME = import.meta.env.VITE_UPI_PAYEE_NAME || "G JITHENDRA KUMAR";
+const SHOP_NOTE = import.meta.env.VITE_SHOP_NAME || "Chamundeshwari Home Sweets";
 
 const Checkout = () => {
   const { items, subtotal, lineTotal, clearCart } = useCart();

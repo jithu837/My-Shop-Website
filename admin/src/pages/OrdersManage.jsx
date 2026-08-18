@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../services/api.js";
 import printBill from "../utils/printBill.js";
+import useOrderStream from "../hooks/useOrderStream.js";
 import "../css/admin.css";
 
 const STATUSES = ["All", "New", "Accepted", "Packed", "Dispatched", "Delivered", "Cancelled"];
@@ -13,15 +14,19 @@ const OrdersManage = () => {
   const [typeFilter, setTypeFilter] = useState("All");
   const [expanded, setExpanded] = useState(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     api
       .get("/orders", { params: { status: statusFilter, orderType: typeFilter } })
       .then((res) => setOrders(res.data))
       .finally(() => setLoading(false));
-  };
+  }, [statusFilter, typeFilter]);
 
-  useEffect(load, [statusFilter, typeFilter]);
+  // Reload list from server whenever filters change.
+  useEffect(() => { load(); }, [load]);
+
+  // Also auto-refresh when a new order comes in via the SSE stream.
+  useOrderStream(load);
 
   const updateStatus = async (id, status) => {
     await api.patch(`/orders/${id}/status`, { status });

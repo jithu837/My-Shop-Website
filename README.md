@@ -21,7 +21,7 @@ Classic CSS throughout (no Tailwind) — brass, maroon and cream color theme.
 npm run install:all
 ```
 
-This installs dependencies in both `server/` and `client/`.
+This installs dependencies in all three projects: `server/`, `client/`, and `admin/`.
 
 ### Configure the server
 
@@ -50,16 +50,19 @@ This adds 21 starter sweets & hots products so the site isn't empty. Edit their 
 Open two terminals:
 
 ```bash
-# Terminal 1 - backend (http://localhost:5000)
+# Terminal 1 — backend (http://localhost:5000)
 npm run server
 
-# Terminal 2 - frontend (http://localhost:5173)
+# Terminal 2 — customer site (http://localhost:5173)
 npm run client
+
+# Terminal 3 — admin owner panel (http://localhost:5174)
+npm run admin
 ```
 
 Visit:
 - Customer site: **http://localhost:5173**
-- Admin panel: **http://localhost:5173/admin/login** (use the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from your `.env`)
+- Admin panel: **http://localhost:5174** (direct access, no login required — keep this URL private)
 
 ## 4. How things work
 

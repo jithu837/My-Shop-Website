@@ -6,10 +6,10 @@ import ProductCard from "../components/ProductCard.jsx";
 import "../css/products.css";
 import "../css/counterorder.css";
 
-// Shop's UPI details - keep in sync with Checkout.jsx if it ever changes
-const UPI_ID = "7816096147@naviaxis";
-const UPI_PAYEE_NAME = "G JITHENDRA KUMAR";
-const SHOP_NOTE = "Chamundeshwari Home Sweets";
+// Shop's UPI details — read from env vars (same as Checkout.jsx, always in sync)
+const UPI_ID = import.meta.env.VITE_UPI_ID || "7816096147@naviaxis";
+const UPI_PAYEE_NAME = import.meta.env.VITE_UPI_PAYEE_NAME || "G JITHENDRA KUMAR";
+const SHOP_NOTE = import.meta.env.VITE_SHOP_NAME || "Chamundeshwari Home Sweets";
 
 const CATEGORIES = ["All", "Sweets", "Hots", "Snacks", "Combo"];
 

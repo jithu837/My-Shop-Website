@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
 const connectDB = async () => {
+  if (!process.env.MONGO_URI) {
+    throw new Error("MONGO_URI is not configured. Add it to the Render environment variables.");
+  }
+
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
       serverApi: {
@@ -11,8 +15,7 @@ const connectDB = async () => {
     });
     console.log(`MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`MongoDB connection failed: ${error.message}`);
-    process.exit(1);
+    throw new Error(`MongoDB connection failed: ${error.message}`);
   }
 };
 

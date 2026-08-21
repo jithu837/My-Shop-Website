@@ -36,6 +36,10 @@ Open `.env` and set:
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` — your owner login (created automatically the first time the server starts)
 - `UPI_ID` / `UPI_PAYEE_NAME` — already set to your Navi UPI details, change if needed
 
+For Render, add these values under the service's **Environment** settings. Do not commit
+`server/.env`; Render cannot use a local `.env` file from your computer. The `MONGO_URI`
+value must be only the connection string, beginning with `mongodb://` or `mongodb+srv://`.
+
 ### Seed starter products (optional but recommended)
 
 ```bash

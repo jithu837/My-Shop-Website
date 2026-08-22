@@ -14,8 +14,8 @@ const router = express.Router();
 
 // Public
 router.get("/", getProducts);
-router.get("/:id", getProductById);
 router.get("/:id/related", getRelatedProducts);
+router.get("/:id", getProductById);
 
 // Admin (login removed — direct access)
 router.post("/", upload.single("image"), createProduct);

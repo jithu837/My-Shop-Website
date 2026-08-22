@@ -40,7 +40,25 @@ const app = express();
 // uses the real client IP instead of the proxy's internal address.
 app.set("trust proxy", 1);
 
-app.use(cors());
+// Allow requests from the deployed Vercel frontends (and all origins in local dev
+// when CORS_ORIGIN is unset). Set CORS_ORIGIN in Render env vars to e.g.:
+//   https://my-shop-website-seven.vercel.app,https://my-shop-admin.vercel.app
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+  : null; // null = allow all (dev)
+
+app.use(
+  cors({
+    origin: allowedOrigins
+      ? (origin, cb) => {
+          // Allow requests with no Origin header (server-to-server, curl, etc.)
+          if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+          cb(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      : true, // dev – allow everything
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use("/uploads", express.static(uploadPath));
 

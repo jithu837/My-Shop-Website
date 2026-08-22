@@ -22,7 +22,9 @@ const ProductManage = () => {
     api.get("/products", { params: { admin: true } }).then((res) => setProducts(res.data)).finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const openAdd = () => {
     setEditingId(null);
@@ -68,14 +70,24 @@ const ProductManage = () => {
   };
 
   const toggleActive = async (id) => {
-    await api.patch(`/products/${id}/toggle`);
-    load();
+    try {
+      await api.patch(`/products/${id}/toggle`);
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not toggle product status");
+    } finally {
+      load();
+    }
   };
 
   const remove = async (id) => {
     if (!window.confirm("Delete this product permanently?")) return;
-    await api.delete(`/products/${id}`);
-    load();
+    try {
+      await api.delete(`/products/${id}`);
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not delete product");
+    } finally {
+      load();
+    }
   };
 
   return (

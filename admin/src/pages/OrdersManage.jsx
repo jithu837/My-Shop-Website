@@ -29,13 +29,23 @@ const OrdersManage = () => {
   useOrderStream(load);
 
   const updateStatus = async (id, status) => {
-    await api.patch(`/orders/${id}/status`, { status });
-    load();
+    try {
+      await api.patch(`/orders/${id}/status`, { status });
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not update status");
+    } finally {
+      load();
+    }
   };
 
   const updatePayment = async (id, paymentStatus) => {
-    await api.patch(`/orders/${id}/status`, { paymentStatus });
-    load();
+    try {
+      await api.patch(`/orders/${id}/status`, { paymentStatus });
+    } catch (err) {
+      alert(err.response?.data?.message || "Could not update payment status");
+    } finally {
+      load();
+    }
   };
 
   return (

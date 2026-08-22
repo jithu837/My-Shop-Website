@@ -25,6 +25,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
+  const [upiError, setUpiError] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null); // shown once order is created, before UPI confirm
 
   const discount = couponCode.toUpperCase() === "SWEET10" ? Math.round(subtotal * 0.1) : 0;
@@ -65,15 +66,21 @@ const Checkout = () => {
   };
 
   const confirmUpiPayment = async () => {
-    await api.patch(`/orders/${placedOrder._id}/confirm-payment`);
-    clearCart();
-    navigate(`/order-success/${placedOrder._id}`);
+    setUpiError("");
+    try {
+      await api.patch(`/orders/${placedOrder._id}/confirm-payment`);
+      clearCart();
+      navigate(`/order-success/${placedOrder._id}`);
+    } catch (err) {
+      setUpiError(err.response?.data?.message || "Could not confirm payment. Please try again.");
+    }
   };
 
-  if (items.length === 0 && !placedOrder) {
-    navigate("/products");
-    return null;
-  }
+  // Empty cart guard — moved into an effect so navigation is never called during render
+  // (which triggers React's "cannot update during render" warning).
+  React.useEffect(() => {
+    if (items.length === 0 && !placedOrder) navigate("/products");
+  }, [items.length, placedOrder, navigate]);
 
   // Step 2: UPI QR screen, shown after the order is created
   if (placedOrder) {
@@ -97,6 +104,7 @@ const Checkout = () => {
             <button className="btn btn-primary" onClick={confirmUpiPayment}>
               I've Paid — Confirm Payment
             </button>
+            {upiError && <p className="checkout-error">{upiError}</p>}
             <p className="checkout-upi-note">
               Your order is saved. Once you confirm, the shop owner will verify and start preparing it.
             </p>

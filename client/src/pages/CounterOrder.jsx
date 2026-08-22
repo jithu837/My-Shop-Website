@@ -27,6 +27,7 @@ const CounterOrder = () => {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
+  const [upiError, setUpiError] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
 
   useEffect(() => {
@@ -71,9 +72,14 @@ const CounterOrder = () => {
   };
 
   const confirmUpiPayment = async () => {
-    await api.patch(`/orders/${placedOrder._id}/confirm-payment`);
-    clearCart();
-    setStep("done");
+    setUpiError("");
+    try {
+      await api.patch(`/orders/${placedOrder._id}/confirm-payment`);
+      clearCart();
+      setStep("done");
+    } catch (err) {
+      setUpiError(err.response?.data?.message || "Could not confirm payment. Please try again.");
+    }
   };
 
   const startOver = () => {
@@ -144,6 +150,7 @@ const CounterOrder = () => {
             <button className="btn btn-primary" onClick={confirmUpiPayment}>
               I've Paid — Confirm Payment
             </button>
+            {upiError && <p className="checkout-error">{upiError}</p>}
             <p className="checkout-upi-note">
               Show your order number at the counter once payment is confirmed.
             </p>

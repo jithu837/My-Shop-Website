@@ -17,7 +17,7 @@ const ProductCard = ({ product }) => {
     <div className="product-card">
       {product.offerPercent > 0 && <span className="product-card-offer">{product.offerPercent}% OFF</span>}
       <Link to={`/products/${product._id}`} className="product-card-image-wrap">
-        <img src={imageUrl(product.image)} alt={product.name} loading="lazy" />
+        <img src={imageUrl(product)} alt={product.name} loading="lazy" />
       </Link>
 
       <div className="product-card-body">

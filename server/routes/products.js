@@ -2,6 +2,7 @@ import express from "express";
 import {
   getProducts,
   getProductById,
+  getProductImage,
   getRelatedProducts,
   createProduct,
   updateProduct,
@@ -14,6 +15,7 @@ const router = express.Router();
 
 // Public
 router.get("/", getProducts);
+router.get("/:id/image", getProductImage);   // serves legacy base64 images
 router.get("/:id/related", getRelatedProducts);
 router.get("/:id", getProductById);
 

@@ -49,10 +49,33 @@ api.interceptors.response.use(
   }
 );
 
-export const imageUrl = (filename) => {
-  if (!filename) return "/placeholder-sweet.svg";
-  if (filename.startsWith("data:image")) return filename;
-  return API_BASE ? `${API_BASE}/uploads/${filename}` : `/uploads/${filename}`;
+// imageUrl(product) — accepts a full product object OR just a filename string.
+// • New products:    image = "1724000000-ladoo.jpg"  → /uploads/<filename>
+// • Legacy products: image = "" + hasLegacyImage: true → /api/products/:id/image
+// • Old base64 still in state: image starts with "data:" → use as-is
+export const imageUrl = (productOrFilename, productId) => {
+  if (typeof productOrFilename === "string") {
+    const filename = productOrFilename;
+    if (!filename) return "/placeholder-sweet.svg";
+    if (filename.startsWith("data:image")) return filename;
+    return API_BASE
+      ? `${API_BASE}/uploads/${filename}`
+      : `/uploads/${filename}`;
+  }
+
+  const product = productOrFilename;
+  const id = productId || product?._id;
+
+  if (product?.hasLegacyImage && id) {
+    return API_BASE
+      ? `${API_BASE}/api/products/${id}/image`
+      : `/api/products/${id}/image`;
+  }
+  if (!product?.image) return "/placeholder-sweet.svg";
+  if (product.image.startsWith("data:image")) return product.image;
+  return API_BASE
+    ? `${API_BASE}/uploads/${product.image}`
+    : `/uploads/${product.image}`;
 };
 
 export default api;

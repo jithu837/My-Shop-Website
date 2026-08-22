@@ -81,7 +81,29 @@ const PORT = process.env.PORT || 5000;
 connectDB()
   .then(async () => {
     await ensureAdminExists();
-    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+
+      // ── Keep-alive self-ping ──────────────────────────────────────────────
+      // Render's free tier spins down after ~15 min of inactivity, causing
+      // 502/503 cold-start errors. Ping our own /api/health every 14 minutes
+      // to keep the server warm. Node 18+ has built-in global fetch.
+      const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+      if (RENDER_URL) {
+        const pingUrl = `${RENDER_URL}/api/health`;
+        const keepAlive = setInterval(async () => {
+          try {
+            await fetch(pingUrl, { signal: AbortSignal.timeout(10_000) });
+            console.log(`[keep-alive] pinged ${pingUrl}`);
+          } catch {
+            // network blip — ignore, next ping will try again
+          }
+        }, 14 * 60 * 1000); // every 14 minutes
+
+        process.on("SIGTERM", () => clearInterval(keepAlive));
+        process.on("SIGINT",  () => clearInterval(keepAlive));
+      }
+    });
   })
   .catch((error) => {
     console.error(`Server startup failed: ${error.message}`);

@@ -7,6 +7,7 @@ import "../css/home.css";
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isWaking, setIsWaking] = useState(false); // true if server cold-starting
 
   const loadProducts = (showSpinner = false) => {
     if (showSpinner) setLoading(true);
@@ -17,13 +18,19 @@ const Home = () => {
   };
 
   useEffect(() => {
-    loadProducts(true); // first load shows spinner
+    // Show "waking up" hint if server takes > 3s (Render cold-start)
+    const wakeTimer = setTimeout(() => {
+      if (loading) setIsWaking(true);
+    }, 3000);
+
+    loadProducts(true);
     // Background sync every 30s & on focus — silent, no spinner/flash
     const interval = setInterval(() => loadProducts(false), 30000);
     const onFocus = () => loadProducts(false);
     window.addEventListener("focus", onFocus);
 
     return () => {
+      clearTimeout(wakeTimer);
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };
@@ -79,7 +86,14 @@ const Home = () => {
           </div>
 
           {loading ? (
-            <div className="spinner" />
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <div className="spinner" />
+              {isWaking && (
+                <p style={{ marginTop: "16px", color: "#888", fontSize: "0.9rem" }}>
+                  ⏳ Server is waking up, please wait a moment…
+                </p>
+              )}
+            </div>
           ) : featured.length === 0 ? (
             <p className="empty-state">Products coming soon.</p>
           ) : (

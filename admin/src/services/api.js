@@ -17,7 +17,37 @@ const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api` : "/api",
+  timeout: 20000, // 20s — gives cold-starting Render server time to wake
 });
+
+// ── Retry interceptor ─────────────────────────────────────────────────────────
+// Render free tier: server sleeps after 15 min, first request gets 502/503.
+// Automatically retry up to 3 times with increasing delay (2s, 4s, 6s).
+api.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    const config = err.config;
+    if (!config) return Promise.reject(err);
+
+    const status = err.response?.status;
+    const isRetryable =
+      !err.response || // network error / no response at all
+      status === 502 ||
+      status === 503 ||
+      status === 504;
+
+    config._retryCount = config._retryCount || 0;
+
+    if (isRetryable && config._retryCount < 3) {
+      config._retryCount++;
+      const delay = config._retryCount * 2000; // 2s, 4s, 6s
+      await new Promise((r) => setTimeout(r, delay));
+      return api(config);
+    }
+
+    return Promise.reject(err);
+  }
+);
 
 export const imageUrl = (filename) => {
   if (!filename) return "/placeholder-sweet.svg";

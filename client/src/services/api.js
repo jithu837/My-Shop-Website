@@ -5,7 +5,9 @@ import axios from "axios";
 // In production the client is on Vercel and the backend is on Render,
 // so VITE_API_URL must be set to your live Render URL,
 // e.g. https://my-shop-website-xxxx.onrender.com
-const API_BASE = import.meta.env.VITE_API_URL || "";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "" : "https://my-shop-website-g1pl.onrender.com");
 
 const api = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api` : "/api",

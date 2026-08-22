@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "" : "https://my-shop-website-g1pl.onrender.com");
 const STREAM_URL = API_BASE ? `${API_BASE}/api/orders/stream` : "/api/orders/stream";
 
 /**

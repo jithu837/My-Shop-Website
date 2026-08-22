@@ -67,30 +67,33 @@ const speak = (order) => {
 };
 
 // ── Single notification card ───────────────────────────────────────────────
-const NotifCard = ({ order, onDismiss }) => {
+const NotifCard = ({ order, queueLength, onDismiss, onConfirm }) => {
   const [dismissing, setDismissing] = useState(false);
-  const timerRef = useRef(null);
 
   const dismiss = useCallback(() => {
     setDismissing(true);
     setTimeout(onDismiss, 280); // wait for slide-out animation
   }, [onDismiss]);
 
+  const confirm = useCallback(() => {
+    setDismissing(true);
+    setTimeout(onConfirm, 280); 
+  }, [onConfirm]);
+
   const orderType = order.orderType === "Counter" ? "🔳 Counter" : "🌐 Website Order";
   const itemCount = order.items?.length ?? 0;
 
   return (
     <div className={`notif-card${dismissing ? " is-dismissing" : ""}`}>
-      {/* ── Header ── */}
       <div className="notif-header">
         <div className="notif-badge">
           <span className="notif-badge-icon">🔔</span>
-          New Order!
+          {queueLength > 1 ? `Pending Orders: ${queueLength}` : "New Order!"}
         </div>
         <button className="notif-close" onClick={dismiss} aria-label="Dismiss">✕</button>
       </div>
 
-      {/* ── Customer name ── */}
+      {/* ── Customer name & items ── */}
       <div className="notif-body">
         <div className="notif-customer">
           {order.customerName || "Walk-in Customer"}
@@ -99,9 +102,19 @@ const NotifCard = ({ order, onDismiss }) => {
         <div className="notif-meta">
           <span className="notif-chip">📋 {order.orderNumber}</span>
           <span className="notif-chip is-total">₹{order.total}</span>
-          <span className="notif-chip">🛒 {itemCount} item{itemCount !== 1 ? "s" : ""}</span>
           <span className="notif-chip">{orderType}</span>
           <span className="notif-chip">💳 {order.paymentMethod}</span>
+        </div>
+
+        <div className="notif-items">
+          {order.items?.map((item, idx) => (
+            <div key={item._id || idx} className="notif-item-row">
+              <span className="notif-item-name">{item.name}</span>
+              <span className="notif-item-qty">
+                 {item.grams >= 1000 ? `${item.grams / 1000}kg` : `${item.grams}g`}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -109,12 +122,12 @@ const NotifCard = ({ order, onDismiss }) => {
       <div className="notif-actions">
         <button
           className="notif-btn-print"
-          onClick={() => { printBill(order); dismiss(); }}
+          onClick={() => { printBill(order); }}
         >
           🖨 Print Bill
         </button>
-        <button className="notif-btn-dismiss" onClick={dismiss}>
-          Dismiss
+        <button className="notif-btn-confirm" onClick={confirm}>
+          ✅ Confirm & Next
         </button>
       </div>
     </div>
@@ -122,18 +135,20 @@ const NotifCard = ({ order, onDismiss }) => {
 };
 
 // ── Notification stack (rendered in AdminLayout) ───────────────────────────
-const OrderNotifications = ({ orders, onDismiss }) => {
+const OrderNotifications = ({ orders, onDismiss, onConfirm }) => {
   if (orders.length === 0) return null;
+  
+  const order = orders[0]; // Only show the first order in the queue
 
   return (
     <div className="notif-stack" role="status" aria-live="polite">
-      {orders.map((order) => (
-        <NotifCard
-          key={order._id}
-          order={order}
-          onDismiss={() => onDismiss(order._id)}
-        />
-      ))}
+      <NotifCard
+        key={order._id}
+        order={order}
+        queueLength={orders.length}
+        onDismiss={() => onDismiss(order._id)}
+        onConfirm={() => onConfirm(order._id)}
+      />
     </div>
   );
 };

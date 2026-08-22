@@ -20,6 +20,17 @@ const AdminLayout = () => {
     setNotifications((prev) => prev.filter((o) => o._id !== id));
   }, []);
 
+  const confirmOrder = useCallback(async (id) => {
+    try {
+      await api.patch(`/orders/${id}/status`, { status: "Delivered", paymentStatus: "Paid" });
+      setNotifications((prev) => prev.filter((o) => o._id !== id));
+    } catch (err) {
+      console.error("Could not confirm order", err);
+      // fallback dismiss if api fails so it doesn't get stuck
+      setNotifications((prev) => prev.filter((o) => o._id !== id));
+    }
+  }, []);
+
   useOrderStream(handleNewOrder);
 
   // Fetch existing "New" orders when the admin panel is first opened/refreshed
@@ -39,7 +50,11 @@ const AdminLayout = () => {
   return (
     <div className="admin-shell">
       {/* Real-time order notification cards (top-right corner) */}
-      <OrderNotifications orders={notifications} onDismiss={dismissNotification} />
+      <OrderNotifications 
+        orders={notifications} 
+        onDismiss={dismissNotification} 
+        onConfirm={confirmOrder} 
+      />
 
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">

@@ -1,8 +1,14 @@
 import { useEffect, useRef } from "react";
 
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "" : "https://my-shop-website-g1pl.onrender.com");
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_URL || "";
+  if (!envUrl || envUrl.includes("elkf") || envUrl.includes("5pfw")) {
+    return import.meta.env.DEV ? "" : "https://my-shop-website-g1pl.onrender.com";
+  }
+  return envUrl;
+};
+
+const API_BASE = getApiBase();
 const STREAM_URL = API_BASE ? `${API_BASE}/api/orders/stream` : "/api/orders/stream";
 
 /**

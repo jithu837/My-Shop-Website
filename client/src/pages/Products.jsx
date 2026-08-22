@@ -8,6 +8,7 @@ const CATEGORIES = ["All", "Sweets", "Hots", "Snacks", "Combo"];
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isWaking, setIsWaking] = useState(false);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
 
@@ -20,6 +21,10 @@ const Products = () => {
   };
 
   useEffect(() => {
+    // Show waking hint if server takes > 3s (Render cold-start)
+    const wakeTimer = setTimeout(() => {
+      if (loading) setIsWaking(true);
+    }, 3000);
     // First load (or when filter changes) shows spinner
     const timer = setTimeout(() => load(true), 250);
     // Background sync every 30s & on window focus — silent, no spinner
@@ -28,6 +33,7 @@ const Products = () => {
     window.addEventListener("focus", onFocus);
 
     return () => {
+      clearTimeout(wakeTimer);
       clearTimeout(timer);
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
@@ -64,7 +70,14 @@ const Products = () => {
         </div>
 
         {loading ? (
-          <div className="spinner" />
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <div className="spinner" />
+            {isWaking && (
+              <p style={{ marginTop: "16px", color: "#888", fontSize: "0.9rem" }}>
+                ⏳ Server is starting up, please wait a moment…
+              </p>
+            )}
+          </div>
         ) : products.length === 0 ? (
           <p className="empty-state">No products found. Try a different search or category.</p>
         ) : (

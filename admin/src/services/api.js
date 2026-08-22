@@ -17,7 +17,7 @@ const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api` : "/api",
-  timeout: 20000, // 20s — gives cold-starting Render server time to wake
+  timeout: 55000, // 55s — Render free tier cold start can take up to 50s
 });
 
 // ── Retry interceptor ─────────────────────────────────────────────────────────

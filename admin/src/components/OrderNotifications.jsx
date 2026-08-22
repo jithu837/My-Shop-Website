@@ -5,9 +5,35 @@ import "../css/notification.css";
 // Auto-dismiss after this many seconds.
 const DISMISS_AFTER = 12;
 
-// ── Voice announcement ─────────────────────────────────────────────────────
-// Uses the browser's built-in Web Speech API — no API key, no cost.
+// ── Voice & Sound announcement ─────────────────────────────────────────────
+// Uses Web Audio API for a "ding" and Web Speech API for voice.
+const playDing = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    // Create a pleasant double-chime (Ding-Dong)
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); // E5
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {
+    // Ignore if audio context is blocked
+  }
+};
+
 const speak = (order) => {
+  playDing();
+  
   if (!window.speechSynthesis) return;
   // Cancel any ongoing speech so overlapping orders don't pile up.
   window.speechSynthesis.cancel();

@@ -1,17 +1,24 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import printBill from "../utils/printBill.js";
 import "../css/notification.css";
-
 // ── Audio Unlocker ────────────────────────────────────────────────────────
 // Browsers block audio unless the user has interacted with the document.
 // We silently unlock audio on the first click/touch.
+let globalAudioCtx = null;
 let audioUnlocked = false;
+
+const getAudioContext = () => {
+  if (typeof window !== 'undefined' && !globalAudioCtx) {
+    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return globalAudioCtx;
+};
 
 const unlockAudio = () => {
   if (audioUnlocked) return;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') ctx.resume();
     
     if (window.speechSynthesis) {
       const u = new SpeechSynthesisUtterance('');
@@ -34,7 +41,10 @@ if (typeof window !== 'undefined') {
 // Uses Web Audio API for a "ding" and Web Speech API for voice.
 const playDing = () => {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);

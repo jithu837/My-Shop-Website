@@ -48,7 +48,10 @@ export const getRelatedProducts = async (req, res) => {
 export const createProduct = async (req, res) => {
   try {
     const data = { ...req.body };
-    if (req.file) data.image = req.file.filename;
+    if (req.file) {
+      const b64 = req.file.buffer.toString("base64");
+      data.image = `data:${req.file.mimetype};base64,${b64}`;
+    }
 
     const product = await Product.create(data);
     res.status(201).json(product);
@@ -61,7 +64,10 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const data = { ...req.body };
-    if (req.file) data.image = req.file.filename;
+    if (req.file) {
+      const b64 = req.file.buffer.toString("base64");
+      data.image = `data:${req.file.mimetype};base64,${b64}`;
+    }
 
     const product = await Product.findByIdAndUpdate(req.params.id, data, {
       new: true,

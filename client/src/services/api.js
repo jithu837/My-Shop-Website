@@ -21,6 +21,7 @@ const api = axios.create({
 
 export const imageUrl = (filename) => {
   if (!filename) return "/placeholder-sweet.svg";
+  if (filename.startsWith("data:image")) return filename;
   return API_BASE ? `${API_BASE}/uploads/${filename}` : `/uploads/${filename}`;
 };
 

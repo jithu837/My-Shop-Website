@@ -84,6 +84,14 @@ const AdminLayout = () => {
           >
             🔔 Queue ({notifications.length})
           </button>
+
+          <button 
+            className="admin-nav-notif" 
+            style={{ marginTop: '4px', textAlign: 'left', opacity: 0.8 }}
+            onClick={() => speak({ orderNumber: "Test", total: 0, customerName: "Test" })}
+          >
+            🔊 Test Sound
+          </button>
         </nav>
 
         <div className="admin-sidebar-footer">

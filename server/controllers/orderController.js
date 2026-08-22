@@ -2,11 +2,6 @@ import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import { emitNewOrder } from "../utils/orderStream.js";
 
-const genOrderNumber = () => {
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `CHS${Date.now().toString().slice(-6)}${rand}`;
-};
-
 // Customer: place a new order. Validates stock, deducts it, computes totals
 // server-side (never trusts prices sent from the browser).
 export const createOrder = async (req, res) => {
@@ -18,14 +13,6 @@ export const createOrder = async (req, res) => {
     }
 
     const type = orderType === "Counter" ? "Counter" : "Delivery";
-
-    // Delivery orders (normal website checkout) still need contact + address.
-    // Counter orders (QR scan at the shop) skip all of that.
-    if (type === "Delivery") {
-      if (!customerName || !customerPhone || !customerAddress) {
-        return res.status(400).json({ message: "Name, phone and delivery address are required" });
-      }
-    }
 
     let subtotal = 0;
     const orderItems = [];
@@ -65,8 +52,18 @@ export const createOrder = async (req, res) => {
 
     const total = subtotal - discount;
 
+    // Generate sequential order number starting from 1
+    let count = await Order.countDocuments();
+    let nextId = count + 1;
+    while(true) {
+        const existing = await Order.findOne({ orderNumber: nextId.toString() });
+        if (!existing) break;
+        nextId++;
+    }
+    const orderNumberStr = nextId.toString();
+
     const order = await Order.create({
-      orderNumber: genOrderNumber(),
+      orderNumber: orderNumberStr,
       orderType: type,
       customerName: customerName || "Walk-in Customer",
       customerPhone: customerPhone || "",

@@ -18,7 +18,7 @@ const Footer = () => (
       </div>
       <div>
         <h4>Order support</h4>
-        <p>Cash on Delivery and UPI accepted.<br />Fresh batches prepared daily.</p>
+        <p>Cash in Store and UPI accepted.<br />Fresh batches prepared daily.</p>
       </div>
     </div>
     <div className="footer-bottom container">

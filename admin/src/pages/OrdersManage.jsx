@@ -81,7 +81,7 @@ const OrdersManage = () => {
                     <td>{o.orderNumber}</td>
                     <td>
                       <span className={`badge ${o.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`}>
-                        {o.orderType === "Counter" ? "🔳 Counter" : "🚚 Delivery"}
+                        {o.orderType === "Counter" ? "🔳 Counter" : "🌐 Website Order"}
                       </span>
                     </td>
                     <td>{o.customerName}{o.customerPhone && <><br /><small>{o.customerPhone}</small></>}</td>
@@ -110,9 +110,9 @@ const OrdersManage = () => {
                       <td colSpan="9">
                         <div className="order-detail-panel">
                           {o.orderType === "Counter" ? (
-                            <p><strong>Counter order</strong> — customer collects at the shop, no delivery.</p>
+                            <p><strong>Counter order</strong> — customer collects at the shop.</p>
                           ) : (
-                            <p><strong>Delivery address:</strong> {o.customerAddress}</p>
+                            <p><strong>Website order</strong> — customer collects at the shop.</p>
                           )}
                           <table className="admin-table">
                             <thead><tr><th>Item</th><th>Qty</th><th>Rate/kg</th><th>Amount</th></tr></thead>

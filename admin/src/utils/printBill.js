@@ -27,10 +27,7 @@ const buildBillHTML = (order) => {
       ? `<div class="tl"><span>Discount${order.couponCode ? ` (${esc(order.couponCode)})` : ""}</span><span>−${money(order.discount)}</span></div>`
       : "";
 
-  const typeLabel = order.orderType === "Counter" ? "COUNTER PICKUP" : "HOME DELIVERY";
-  const address = order.customerAddress
-    ? `<div class="bill-line">${esc(order.customerAddress)}</div>`
-    : "";
+  const typeLabel = order.orderType === "Counter" ? "COUNTER PICKUP" : "WEBSITE ORDER";
 
   return `<!DOCTYPE html>
 <html>
@@ -84,7 +81,6 @@ const buildBillHTML = (order) => {
 
   <div class="bill-line"><strong>Customer:</strong> ${esc(order.customerName)}</div>
   <div class="bill-line">${esc(order.customerPhone)}</div>
-  ${address}
 
   <div class="solid"></div>
   <table>

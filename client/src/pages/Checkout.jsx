@@ -125,7 +125,7 @@ const Checkout = () => {
 
         <div className="checkout-grid">
           <form className="card checkout-form" onSubmit={placeOrder}>
-            <h3>Delivery Details</h3>
+            <h3>Customer Details</h3>
             <div className="form-group">
               <label>Full name</label>
               <input required name="customerName" value={form.customerName} onChange={handleChange} />
@@ -133,10 +133,6 @@ const Checkout = () => {
             <div className="form-group">
               <label>Phone number</label>
               <input required name="customerPhone" value={form.customerPhone} onChange={handleChange} pattern="[0-9]{10}" title="10 digit phone number" />
-            </div>
-            <div className="form-group">
-              <label>Delivery address</label>
-              <textarea required rows="3" name="customerAddress" value={form.customerAddress} onChange={handleChange} />
             </div>
             <div className="form-group">
               <label>Email (optional)</label>
@@ -147,7 +143,7 @@ const Checkout = () => {
             <div className="checkout-payment-options">
               <label className={`checkout-payment-option ${paymentMethod === "COD" ? "is-selected" : ""}`}>
                 <input type="radio" name="paymentMethod" checked={paymentMethod === "COD"} onChange={() => setPaymentMethod("COD")} />
-                Cash on Delivery
+                Cash in Store
               </label>
               <label className={`checkout-payment-option ${paymentMethod === "UPI" ? "is-selected" : ""}`}>
                 <input type="radio" name="paymentMethod" checked={paymentMethod === "UPI"} onChange={() => setPaymentMethod("UPI")} />

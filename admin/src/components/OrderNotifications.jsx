@@ -58,7 +58,7 @@ const NotifCard = ({ order, onDismiss }) => {
     return () => clearTimeout(timerRef.current);
   }, [dismiss]);
 
-  const orderType = order.orderType === "Counter" ? "🔳 Counter" : "🚚 Delivery";
+  const orderType = order.orderType === "Counter" ? "🔳 Counter" : "🌐 Website Order";
   const itemCount = order.items?.length ?? 0;
 
   return (

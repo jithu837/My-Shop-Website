@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import useOrderStream from "../hooks/useOrderStream.js";
 import OrderNotifications, { speak } from "../components/OrderNotifications.jsx";
+import api from "../services/api.js";
 import "../css/admin.css";
 
 const AdminLayout = () => {
@@ -20,6 +21,20 @@ const AdminLayout = () => {
   }, []);
 
   useOrderStream(handleNewOrder);
+
+  // Fetch existing "New" orders when the admin panel is first opened/refreshed
+  useEffect(() => {
+    api.get("/orders", { params: { status: "New" } })
+      .then((res) => {
+        const newOrders = res.data;
+        if (newOrders && newOrders.length > 0) {
+          setNotifications(newOrders);
+          // Just speak the latest one so it doesn't overlap excessively
+          speak(newOrders[0]);
+        }
+      })
+      .catch((err) => console.error("Could not fetch initial pending orders:", err));
+  }, []);
 
   return (
     <div className="admin-shell">

@@ -1,115 +1,57 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import printBill from "../utils/printBill.js";
 import "../css/notification.css";
-// ── Audio Unlocker ────────────────────────────────────────────────────────
-// Browsers block audio unless the user has interacted with the document.
-// We silently unlock audio on the first click/touch.
-let globalAudioCtx = null;
-let audioUnlocked = false;
 
-const getAudioContext = () => {
-  if (typeof window !== 'undefined' && !globalAudioCtx) {
-    globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  return globalAudioCtx;
-};
-
-const unlockAudio = () => {
-  if (audioUnlocked) return;
-  try {
-    const ctx = getAudioContext();
-    if (ctx && ctx.state === 'suspended') ctx.resume();
-    
-    if (window.speechSynthesis) {
-      const u = new SpeechSynthesisUtterance('');
-      u.volume = 0;
-      window.speechSynthesis.speak(u);
-    }
-    
-    audioUnlocked = true;
-    document.removeEventListener('click', unlockAudio);
-    document.removeEventListener('touchstart', unlockAudio);
-  } catch (e) {}
-};
-
-if (typeof window !== 'undefined') {
-  document.addEventListener('click', unlockAudio);
-  document.addEventListener('touchstart', unlockAudio);
+// ── Audio: use a real WAV file, most reliable across all browsers/mobile ──
+// Pre-create the Audio object so the browser registers it on load (not on demand).
+const dingAudio = typeof window !== 'undefined' ? new Audio('/ding.wav') : null;
+if (dingAudio) {
+  dingAudio.preload = 'auto';
+  dingAudio.volume = 1.0;
 }
 
-// ── Voice & Sound announcement ─────────────────────────────────────────────
-// Uses Web Audio API for a "ding" and Web Speech API for voice.
-const playOscillator = (ctx) => {
-  try {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); // E5
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.5);
-  } catch(e) {}
-};
-
 const playDing = () => {
-  try {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(() => playOscillator(ctx)).catch(() => {});
-    } else {
-      playOscillator(ctx);
-    }
-  } catch (e) {
-    // Ignore if audio context is blocked
-  }
+  if (!dingAudio) return;
+  dingAudio.currentTime = 0;
+  dingAudio.play().catch(() => {});
 };
 
-const speak = (order) => {
-  playDing();
-  
+// ── Voice announcement via Web Speech API ──
+const speakText = (text) => {
   if (!window.speechSynthesis) return;
-  // Cancel any ongoing speech so overlapping orders don't pile up.
+  // Cancel any current utterance
   if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
     window.speechSynthesis.cancel();
   }
-
-  const name = order.customerName && order.customerName !== "Walk-in Customer"
-    ? `Customer ${order.customerName}.`
-    : "";
-  const text = `New order received! ${name} Order number ${order.orderNumber}. Total amount rupees ${order.total}.`;
-
   const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.92;
-  utter.pitch = 1.05;
+  utter.rate = 0.9;
+  utter.pitch = 1.0;
   utter.volume = 1.0;
-
-  // Pick the best available English voice — prefer Indian English.
-  const applyVoice = () => {
+  const setVoiceAndSpeak = () => {
     const voices = window.speechSynthesis.getVoices();
     const pick =
-      voices.find((v) => v.lang === "en-IN") ||
-      voices.find((v) => v.lang.startsWith("en") && /female|woman/i.test(v.name)) ||
-      voices.find((v) => v.lang.startsWith("en"));
+      voices.find(v => v.lang === 'en-IN') ||
+      voices.find(v => v.lang.startsWith('en') && /female|woman/i.test(v.name)) ||
+      voices.find(v => v.lang.startsWith('en'));
     if (pick) utter.voice = pick;
     window.speechSynthesis.speak(utter);
   };
-
-  // getVoices() is async in some browsers — wait for voiceschanged if empty.
   if (window.speechSynthesis.getVoices().length > 0) {
-    applyVoice();
+    setVoiceAndSpeak();
   } else {
-    window.speechSynthesis.onvoiceschanged = applyVoice;
+    window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
   }
+};
+
+// ── Main speak function (called from AdminLayout) ──
+export const speak = (order) => {
+  playDing();
+  const name = order.customerName && order.customerName !== "Walk-in Customer"
+    ? `Customer ${order.customerName}.`
+    : "";
+  const text = `New order! ${name} Order number ${order.orderNumber}. Total rupees ${order.total}.`;
+  // Small delay so ding plays first
+  setTimeout(() => speakText(text), 600);
 };
 
 // ── Single notification card ───────────────────────────────────────────────

@@ -35,6 +35,11 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Database indexes for fast querying & sorting
+productSchema.index({ isActive: 1, category: 1 });
+productSchema.index({ createdAt: -1 });
+productSchema.index({ soldGrams: -1 });
+
 productSchema.virtual("inStock").get(function () {
   return this.stockGrams > 0 && this.isActive;
 });

@@ -26,7 +26,7 @@ export const createFeedback = async (req, res) => {
 // Admin: list all feedback, most recent first
 export const getAllFeedback = async (req, res) => {
   try {
-    const feedback = await Feedback.find().populate("product", "name").sort({ createdAt: -1 });
+    const feedback = await Feedback.find().populate("product", "name").sort({ createdAt: -1 }).lean();
     res.json(feedback);
   } catch (err) {
     res.status(500).json({ message: "Could not load feedback", error: err.message });

@@ -8,11 +8,24 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadProducts = () => {
     api
       .get("/products")
       .then((res) => setProducts(res.data))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadProducts();
+    // Silent background sync every 15s & when tab gains focus so new admin products display live
+    const interval = setInterval(loadProducts, 15000);
+    const onFocus = () => loadProducts();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   const offers = products.filter((p) => p.offerPercent > 0).slice(0, 4);

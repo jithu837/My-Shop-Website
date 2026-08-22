@@ -27,16 +27,16 @@ export const getDashboardSummary = async (req, res) => {
     const today = startOfToday();
     const monthStart = startOfMonth();
 
-    const [todayOrders, monthOrders, pending, delivered, cancelled, allOrders, products, feedbackDocs] =
+    const [todayOrders, monthOrders, pending, delivered, cancelled, customers, products, feedbackDocs] =
       await Promise.all([
-        Order.find({ createdAt: { $gte: today } }),
-        Order.find({ createdAt: { $gte: monthStart } }),
+        Order.find({ createdAt: { $gte: today } }).lean(),
+        Order.find({ createdAt: { $gte: monthStart } }).lean(),
         Order.countDocuments({ status: { $in: ["New", "Accepted", "Packed", "Dispatched"] } }),
         Order.countDocuments({ status: "Delivered" }),
         Order.countDocuments({ status: "Cancelled" }),
-        Order.find(),
-        Product.find(),
-        Feedback.find(),
+        Order.distinct("customerPhone"),
+        Product.find().lean(),
+        Feedback.find().lean(),
       ]);
 
     const todaySales = todayOrders.filter((o) => o.status !== "Cancelled").length;
@@ -49,13 +49,13 @@ export const getDashboardSummary = async (req, res) => {
       .filter((o) => o.status !== "Cancelled")
       .reduce((sum, o) => sum + o.total, 0);
 
-    const uniqueCustomers = new Set(allOrders.map((o) => o.customerPhone)).size;
+    const uniqueCustomers = customers.filter(Boolean).length;
 
     const lowStock = products.filter((p) => p.stockGrams > 0 && p.stockGrams <= p.lowStockThresholdGrams);
     const outOfStock = products.filter((p) => p.stockGrams <= 0);
 
-    const bestSelling = [...products].sort((a, b) => b.soldGrams - a.soldGrams).slice(0, 5);
-    const leastSelling = [...products].sort((a, b) => a.soldGrams - b.soldGrams).slice(0, 5);
+    const bestSelling = [...products].sort((a, b) => (b.soldGrams || 0) - (a.soldGrams || 0)).slice(0, 5);
+    const leastSelling = [...products].sort((a, b) => (a.soldGrams || 0) - (b.soldGrams || 0)).slice(0, 5);
 
     const avgRating = feedbackDocs.length
       ? Math.round((feedbackDocs.reduce((s, f) => s + f.rating, 0) / feedbackDocs.length) * 10) / 10
@@ -85,7 +85,7 @@ export const getDashboardSummary = async (req, res) => {
 export const getRevenueGraph = async (req, res) => {
   try {
     const from = daysAgo(6);
-    const orders = await Order.find({ createdAt: { $gte: from }, status: { $ne: "Cancelled" } });
+    const orders = await Order.find({ createdAt: { $gte: from }, status: { $ne: "Cancelled" } }).select("createdAt total").lean();
 
     const buckets = {};
     for (let i = 6; i >= 0; i--) {

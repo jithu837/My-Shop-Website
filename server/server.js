@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -47,6 +48,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(compression());
 app.use(express.json());
 app.use("/uploads", express.static(uploadPath));
 

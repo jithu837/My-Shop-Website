@@ -107,7 +107,7 @@ export const confirmPayment = async (req, res) => {
 
 export const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).lean();
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (err) {
@@ -118,7 +118,7 @@ export const getOrderById = async (req, res) => {
 // Customer: order history by phone number (no separate login system required)
 export const getOrdersByPhone = async (req, res) => {
   try {
-    const orders = await Order.find({ customerPhone: req.params.phone }).sort({ createdAt: -1 });
+    const orders = await Order.find({ customerPhone: req.params.phone }).sort({ createdAt: -1 }).lean();
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: "Could not load orders", error: err.message });
@@ -132,7 +132,7 @@ export const getAllOrders = async (req, res) => {
     const filter = {};
     if (status && status !== "All") filter.status = status;
     if (orderType && orderType !== "All") filter.orderType = orderType;
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    const orders = await Order.find(filter).sort({ createdAt: -1 }).lean();
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: "Could not load orders", error: err.message });

@@ -21,7 +21,16 @@ const Products = () => {
 
   useEffect(() => {
     const timer = setTimeout(load, 250);
-    return () => clearTimeout(timer);
+    // Silent auto-refresh every 15s & on window focus so admin product updates appear live
+    const interval = setInterval(load, 15000);
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, search]);
 

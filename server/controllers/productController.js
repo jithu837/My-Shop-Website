@@ -9,7 +9,7 @@ export const getProducts = async (req, res) => {
     if (category && category !== "All") filter.category = category;
     if (search) filter.name = { $regex: search, $options: "i" };
 
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    const products = await Product.find(filter).sort({ createdAt: -1 }).lean();
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: "Could not load products", error: err.message });
@@ -18,7 +18,7 @@ export const getProducts = async (req, res) => {
 
 export const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).lean();
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json(product);
   } catch (err) {
@@ -29,14 +29,14 @@ export const getProductById = async (req, res) => {
 // Related products = same category, excluding itself
 export const getRelatedProducts = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).lean();
     if (!product) return res.status(404).json({ message: "Product not found" });
 
     const related = await Product.find({
       category: product.category,
       _id: { $ne: product._id },
       isActive: true,
-    }).limit(4);
+    }).limit(4).lean();
 
     res.json(related);
   } catch (err) {

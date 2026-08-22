@@ -47,4 +47,9 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Database indexes for fast querying & tracking
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ customerPhone: 1 });
+
 export default mongoose.model("Order", orderSchema);

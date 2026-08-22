@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import printBill from "../utils/printBill.js";
 import "../css/notification.css";
 
-// Auto-dismiss after this many seconds.
-const DISMISS_AFTER = 12;
+
 
 // ── Voice & Sound announcement ─────────────────────────────────────────────
 // Uses Web Audio API for a "ding" and Web Speech API for voice.
@@ -74,29 +73,14 @@ const NotifCard = ({ order, onDismiss }) => {
 
   const dismiss = useCallback(() => {
     setDismissing(true);
-    clearTimeout(timerRef.current);
     setTimeout(onDismiss, 280); // wait for slide-out animation
   }, [onDismiss]);
-
-  // Auto-dismiss after DISMISS_AFTER seconds
-  useEffect(() => {
-    timerRef.current = setTimeout(dismiss, DISMISS_AFTER * 1000);
-    return () => clearTimeout(timerRef.current);
-  }, [dismiss]);
 
   const orderType = order.orderType === "Counter" ? "🔳 Counter" : "🌐 Website Order";
   const itemCount = order.items?.length ?? 0;
 
   return (
-    <div
-      className={`notif-card${dismissing ? " is-dismissing" : ""}`}
-      style={{ "--notif-duration": `${DISMISS_AFTER}s` }}
-    >
-      {/* ── Progress drain bar (auto-dismiss countdown) ── */}
-      <div className="notif-progress">
-        <div className="notif-progress-bar" />
-      </div>
-
+    <div className={`notif-card${dismissing ? " is-dismissing" : ""}`}>
       {/* ── Header ── */}
       <div className="notif-header">
         <div className="notif-badge">

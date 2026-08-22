@@ -2,7 +2,33 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import printBill from "../utils/printBill.js";
 import "../css/notification.css";
 
+// ── Audio Unlocker ────────────────────────────────────────────────────────
+// Browsers block audio unless the user has interacted with the document.
+// We silently unlock audio on the first click/touch.
+let audioUnlocked = false;
 
+const unlockAudio = () => {
+  if (audioUnlocked) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    
+    if (window.speechSynthesis) {
+      const u = new SpeechSynthesisUtterance('');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    }
+    
+    audioUnlocked = true;
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('touchstart', unlockAudio);
+  } catch (e) {}
+};
+
+if (typeof window !== 'undefined') {
+  document.addEventListener('click', unlockAudio);
+  document.addEventListener('touchstart', unlockAudio);
+}
 
 // ── Voice & Sound announcement ─────────────────────────────────────────────
 // Uses Web Audio API for a "ding" and Web Speech API for voice.

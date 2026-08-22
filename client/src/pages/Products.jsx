@@ -11,8 +11,8 @@ const Products = () => {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
 
-  const load = () => {
-    setLoading(true);
+  const load = (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     api
       .get("/products", { params: { category, search: search || undefined } })
       .then((res) => setProducts(res.data))
@@ -20,10 +20,11 @@ const Products = () => {
   };
 
   useEffect(() => {
-    const timer = setTimeout(load, 250);
-    // Silent auto-refresh every 15s & on window focus so admin product updates appear live
-    const interval = setInterval(load, 15000);
-    const onFocus = () => load();
+    // First load (or when filter changes) shows spinner
+    const timer = setTimeout(() => load(true), 250);
+    // Background sync every 30s & on window focus — silent, no spinner
+    const interval = setInterval(() => load(false), 30000);
+    const onFocus = () => load(false);
     window.addEventListener("focus", onFocus);
 
     return () => {

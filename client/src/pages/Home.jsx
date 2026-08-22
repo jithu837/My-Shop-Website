@@ -8,7 +8,8 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadProducts = () => {
+  const loadProducts = (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     api
       .get("/products")
       .then((res) => setProducts(res.data))
@@ -16,10 +17,10 @@ const Home = () => {
   };
 
   useEffect(() => {
-    loadProducts();
-    // Silent background sync every 15s & when tab gains focus so new admin products display live
-    const interval = setInterval(loadProducts, 15000);
-    const onFocus = () => loadProducts();
+    loadProducts(true); // first load shows spinner
+    // Background sync every 30s & on focus — silent, no spinner/flash
+    const interval = setInterval(() => loadProducts(false), 30000);
+    const onFocus = () => loadProducts(false);
     window.addEventListener("focus", onFocus);
 
     return () => {

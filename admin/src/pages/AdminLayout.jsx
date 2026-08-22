@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import useOrderStream from "../hooks/useOrderStream.js";
-import OrderNotifications, { speak } from "../components/OrderNotifications.jsx";
+import OrderNotifications, { speak, AudioUnlockBanner } from "../components/OrderNotifications.jsx";
 import api from "../services/api.js";
 import "../css/admin.css";
 
@@ -53,6 +53,9 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-shell">
+      {/* Audio unlock banner — must be tapped once to enable voice alerts */}
+      <AudioUnlockBanner />
+
       {/* Real-time order notification cards */}
       <OrderNotifications 
         orders={notifications} 

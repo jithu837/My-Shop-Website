@@ -4,6 +4,39 @@ const CartContext = createContext(null);
 
 const STORAGE_KEY = "chs_cart";
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+// Strip base64 images before persisting — they can be several MB each and will
+// blow past the 5 MB localStorage quota after adding just a few products.
+// Only the filename (e.g. "ladoo.jpg") is saved; the full URL is rebuilt at
+// render time via imageUrl() in the components that need it.
+const toStorable = (items) =>
+  items.map(({ image, ...rest }) => {
+    // If it's already a short filename / path, keep it. If it's a base64
+    // blob or an absolute https URL, drop it — it's too large to persist.
+    const safe =
+      image &&
+      !image.startsWith("data:") &&
+      !image.startsWith("http") &&
+      !image.startsWith("/uploads")
+        ? image
+        : undefined;
+    return safe ? { ...rest, image: safe } : rest;
+  });
+
+const saveCart = (items) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStorable(items)));
+  } catch {
+    // QuotaExceededError — clear old data and try once more with stripped items
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStorable(items)));
+    } catch {
+      // Give up silently — cart still works in memory for this session
+    }
+  }
+};
+
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => {
     try {
@@ -17,7 +50,7 @@ export const CartProvider = ({ children }) => {
   const [popup, setPopup] = useState(null); // { name, grams } shown briefly after add-to-cart
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    saveCart(items);
   }, [items]);
 
   const addToCart = useCallback((product, grams) => {
@@ -33,7 +66,7 @@ export const CartProvider = ({ children }) => {
         {
           productId: product._id,
           name: product.name,
-          image: product.image,
+          image: product.image, // kept in React state for display; stripped if base64 before save
           pricePerKg: product.pricePerKg,
           offerPercent: product.offerPercent || 0,
           stepGrams: product.stepGrams || 50,

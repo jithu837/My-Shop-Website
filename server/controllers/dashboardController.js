@@ -27,14 +27,14 @@ export const getDashboardSummary = async (req, res) => {
     const today = startOfToday();
     const monthStart = startOfMonth();
 
-    const [todayOrders, monthOrders, pending, delivered, cancelled, customers, products, feedbackDocs] =
+    const [todayOrders, monthOrders, pending, delivered, cancelled, phoneDocs, products, feedbackDocs] =
       await Promise.all([
         Order.find({ createdAt: { $gte: today } }).lean(),
         Order.find({ createdAt: { $gte: monthStart } }).lean(),
         Order.countDocuments({ status: { $in: ["New", "Accepted", "Packed", "Dispatched"] } }),
         Order.countDocuments({ status: "Delivered" }),
         Order.countDocuments({ status: "Cancelled" }),
-        Order.distinct("customerPhone"),
+        Order.find().select("customerPhone").lean(),
         Product.find().lean(),
         Feedback.find().lean(),
       ]);
@@ -49,7 +49,7 @@ export const getDashboardSummary = async (req, res) => {
       .filter((o) => o.status !== "Cancelled")
       .reduce((sum, o) => sum + o.total, 0);
 
-    const uniqueCustomers = customers.filter(Boolean).length;
+    const uniqueCustomers = new Set(phoneDocs.map((p) => p.customerPhone).filter(Boolean)).size;
 
     const lowStock = products.filter((p) => p.stockGrams > 0 && p.stockGrams <= p.lowStockThresholdGrams);
     const outOfStock = products.filter((p) => p.stockGrams <= 0);

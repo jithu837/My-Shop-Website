@@ -71,11 +71,13 @@ const NotifCard = ({ order, queueLength, onDismiss, onConfirm }) => {
   const [dismissing, setDismissing] = useState(false);
 
   const dismiss = useCallback(() => {
+    window.speechSynthesis?.cancel();
     setDismissing(true);
     setTimeout(onDismiss, 280); // wait for slide-out animation
   }, [onDismiss]);
 
   const confirm = useCallback(() => {
+    window.speechSynthesis?.cancel();
     setDismissing(true);
     setTimeout(onConfirm, 280); 
   }, [onConfirm]);
@@ -135,20 +137,36 @@ const NotifCard = ({ order, queueLength, onDismiss, onConfirm }) => {
 };
 
 // ── Notification stack (rendered in AdminLayout) ───────────────────────────
-const OrderNotifications = ({ orders, onDismiss, onConfirm }) => {
+const OrderNotifications = ({ orders, isOpen, onClose, onDismiss, onConfirm }) => {
   if (orders.length === 0) return null;
   
   const order = orders[0]; // Only show the first order in the queue
 
   return (
-    <div className="notif-stack" role="status" aria-live="polite">
-      <NotifCard
-        key={order._id}
-        order={order}
-        queueLength={orders.length}
-        onDismiss={() => onDismiss(order._id)}
-        onConfirm={() => onConfirm(order._id)}
-      />
+    <div className={`notif-drawer-overlay ${isOpen ? "is-open" : ""}`}>
+      <div className="notif-drawer-backdrop" onClick={onClose} />
+      <div className="notif-drawer" role="status" aria-live="polite">
+        <div className="notif-drawer-header">
+          <h3>Order Queue ({orders.length})</h3>
+          <button className="notif-drawer-close" onClick={onClose}>✕</button>
+        </div>
+        
+        <div className="notif-drawer-body">
+          <NotifCard
+            key={order._id}
+            order={order}
+            queueLength={orders.length}
+            onDismiss={() => {
+               if (orders.length === 1) onClose();
+               onDismiss(order._id);
+            }}
+            onConfirm={() => {
+               if (orders.length === 1) onClose();
+               onConfirm(order._id);
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 };

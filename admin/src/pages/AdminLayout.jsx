@@ -7,6 +7,7 @@ import "../css/admin.css";
 
 const AdminLayout = () => {
   const [notifications, setNotifications] = useState([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   // useCallback keeps the reference stable so useOrderStream never re-subscribes.
   const handleNewOrder = useCallback((order) => {
@@ -14,6 +15,8 @@ const AdminLayout = () => {
     speak(order);
     // 2. Add to the visible notification stack
     setNotifications((prev) => [...prev, order]);
+    // 3. Auto-open drawer
+    setIsNotifOpen(true);
   }, []);
 
   const dismissNotification = useCallback((id) => {
@@ -40,6 +43,7 @@ const AdminLayout = () => {
         const newOrders = res.data;
         if (newOrders && newOrders.length > 0) {
           setNotifications(newOrders);
+          setIsNotifOpen(true);
           // Just speak the latest one so it doesn't overlap excessively
           speak(newOrders[0]);
         }
@@ -49,9 +53,11 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-shell">
-      {/* Real-time order notification cards (top-right corner) */}
+      {/* Real-time order notification cards */}
       <OrderNotifications 
         orders={notifications} 
+        isOpen={isNotifOpen}
+        onClose={() => setIsNotifOpen(false)}
         onDismiss={dismissNotification} 
         onConfirm={confirmOrder} 
       />
@@ -71,6 +77,13 @@ const AdminLayout = () => {
           <NavLink to="/orders">📦 Orders</NavLink>
           <NavLink to="/qr">🔳 Counter QR</NavLink>
           <NavLink to="/feedback">💬 Feedback</NavLink>
+          
+          <button 
+            className={`admin-nav-notif ${notifications.length > 0 ? "has-alerts" : ""}`}
+            onClick={() => setIsNotifOpen(!isNotifOpen)}
+          >
+            🔔 Queue ({notifications.length})
+          </button>
         </nav>
 
         <div className="admin-sidebar-footer">

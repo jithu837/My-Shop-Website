@@ -39,18 +39,13 @@ if (typeof window !== 'undefined') {
 
 // ── Voice & Sound announcement ─────────────────────────────────────────────
 // Uses Web Audio API for a "ding" and Web Speech API for voice.
-const playDing = () => {
+const playOscillator = (ctx) => {
   try {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    if (ctx.state === 'suspended') ctx.resume();
-
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
     
-    // Create a pleasant double-chime (Ding-Dong)
     osc.type = "sine";
     osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
     osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); // E5
@@ -61,6 +56,19 @@ const playDing = () => {
     
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+};
+
+const playDing = () => {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => playOscillator(ctx)).catch(() => {});
+    } else {
+      playOscillator(ctx);
+    }
   } catch (e) {
     // Ignore if audio context is blocked
   }
@@ -71,7 +79,9 @@ const speak = (order) => {
   
   if (!window.speechSynthesis) return;
   // Cancel any ongoing speech so overlapping orders don't pile up.
-  window.speechSynthesis.cancel();
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    window.speechSynthesis.cancel();
+  }
 
   const name = order.customerName && order.customerName !== "Walk-in Customer"
     ? `Customer ${order.customerName}.`

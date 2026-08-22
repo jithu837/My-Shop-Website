@@ -4,5 +4,13 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": "https://my-shop-website-g1pl.onrender.com"
+  },
+  "build": {
+    "env": {
+      "VITE_API_URL": "https://my-shop-website-g1pl.onrender.com"
+    }
+  }
 }

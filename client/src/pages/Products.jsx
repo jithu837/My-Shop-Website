@@ -44,6 +44,7 @@ const Products = () => {
 
   useEffect(() => {
     isMounted.current = true;
+    isFetching.current = false; // reset on every filter change so new category/search always fires
     const canUseCache = isDefaultFilter && cached;
 
     const wakeTimer = !canUseCache

@@ -22,7 +22,8 @@ const api = axios.create({
 
 // ── Retry interceptor ─────────────────────────────────────────────────────────
 // Render free tier: server sleeps after 15 min, first request gets 502/503.
-// Automatically retry up to 2 times with increasing delay (1s, 2s).
+// Retry up to 2 times with longer delays (5s, 10s) to give Render time to wake up.
+// Short delays (1s, 2s) guaranteed another 502 since Render takes 30-50s to boot.
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
@@ -40,7 +41,7 @@ api.interceptors.response.use(
 
     if (isRetryable && config._retryCount < 2) {
       config._retryCount++;
-      const delay = config._retryCount * 1000; // 1s, 2s
+      const delay = config._retryCount * 5000; // 5s, 10s — give Render time to boot
       await new Promise((r) => setTimeout(r, delay));
       return api(config);
     }

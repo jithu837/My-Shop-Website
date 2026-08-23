@@ -6,29 +6,36 @@ import { getCachedProducts, setCachedProducts } from "../services/productCache.j
 import "../css/home.css";
 
 const Home = () => {
-  // ── Stale-While-Revalidate: show cache instantly, refresh in background ──
+  // Stale-While-Revalidate: show cache instantly, refresh in background
   const cached = getCachedProducts();
   const [products, setProducts] = useState(cached?.data || []);
   const [loading, setLoading] = useState(!cached); // no spinner if we have cache
-  const [isWaking, setIsWaking] = useState(false);
-  const [error, setError] = useState(false);
+  const [serverError, setServerError] = useState(false);
   const isMounted = useRef(true);
-  const isFetching = useRef(false); // guard: prevents parallel requests from flooding server
+  const isFetching = useRef(false); // prevents parallel requests flooding the server
+  const retryTimer = useRef(null);
 
   const loadProducts = (showSpinner = false) => {
     if (isFetching.current) return; // skip if a request is already in flight
     isFetching.current = true;
     if (showSpinner) setLoading(true);
-    setError(false);
+    setServerError(false);
+    if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
+
     api
       .get("/products")
       .then((res) => {
         if (!isMounted.current) return;
         setProducts(res.data);
-        setCachedProducts(res.data); // update cache for next visit
+        setCachedProducts(res.data); // save to localStorage for instant next visit
       })
       .catch(() => {
-        if (isMounted.current) setError(true);
+        if (!isMounted.current) return;
+        setServerError(true);
+        // Auto-retry after 10s — server may still be waking up
+        retryTimer.current = setTimeout(() => {
+          if (isMounted.current && !isFetching.current) loadProducts(false);
+        }, 10000);
       })
       .finally(() => {
         isFetching.current = false;
@@ -38,33 +45,26 @@ const Home = () => {
 
   useEffect(() => {
     isMounted.current = true;
+    loadProducts(!cached); // show spinner only if no cache
 
-    // Only show "waking up" hint if we have NO cache and server is slow
-    const wakeTimer = !cached
-      ? setTimeout(() => {
-          if (isMounted.current && loading) setIsWaking(true);
-        }, 3000)
-      : null;
-
-    // Always fetch fresh data — but silently if cache is available
-    loadProducts(!cached);
-
-    // Background sync every 30s & on focus — silent, no spinner/flash
-    // Guard: only fire if no request is already in flight (prevents server DDOS on slow/waking Render)
+    // Background sync every 30s & on focus — guarded against request floods
     const interval = setInterval(() => { if (!isFetching.current) loadProducts(false); }, 30000);
     const onFocus = () => { if (!isFetching.current) loadProducts(false); };
     window.addEventListener("focus", onFocus);
 
     return () => {
       isMounted.current = false;
-      if (wakeTimer) clearTimeout(wakeTimer);
+      if (retryTimer.current) clearTimeout(retryTimer.current);
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };
   }, []);
 
-  const offers = products.filter((p) => p.offerPercent > 0).slice(0, 4);
+  const offers   = products.filter((p) => p.offerPercent > 0).slice(0, 4);
   const featured = products.slice(0, 8);
+
+  const showSpinner = loading && products.length === 0;
+  const showError   = serverError && products.length === 0 && !loading;
 
   return (
     <>
@@ -112,25 +112,27 @@ const Home = () => {
             <h2>From our tray to your table</h2>
           </div>
 
-          {loading ? (
+          {/* Subtle notice when showing stale cached data */}
+          {serverError && featured.length > 0 && (
+            <p style={{ textAlign: "center", fontSize: "0.82rem", color: "#a0856b", marginBottom: "12px" }}>
+              ⏳ Showing saved products · Reconnecting automatically…
+            </p>
+          )}
+
+          {showSpinner ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <div className="spinner" />
-              {isWaking && (
-                <p style={{ marginTop: "16px", color: "#888", fontSize: "0.9rem" }}>
-                  ⏳ Server is waking up, please wait a moment…
-                </p>
-              )}
+              <p style={{ marginTop: "16px", color: "#888", fontSize: "0.9rem" }}>
+                ⏳ Loading products…
+              </p>
             </div>
-          ) : error && featured.length === 0 ? (
+          ) : showError ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <p style={{ color: "#888", fontSize: "0.95rem", marginBottom: "16px" }}>
-                ⚠️ Server is waking up. Please try again.
+                ⚠️ Server is starting up. Retrying automatically in 10s…
               </p>
-              <button
-                className="btn btn-primary"
-                onClick={() => loadProducts(true)}
-              >
-                🔄 Retry
+              <button className="btn btn-primary" onClick={() => loadProducts(true)}>
+                🔄 Retry Now
               </button>
             </div>
           ) : featured.length === 0 ? (

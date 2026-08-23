@@ -52,15 +52,14 @@ app.use(compression());
 app.use(express.json());
 app.use("/uploads", express.static(uploadPath));
 
+// Health endpoint — must be BEFORE rate limiters so it's never blocked
+app.get("/api/health", (req, res) => res.json({ status: "ok", ts: Date.now() }));
+
 // ─── Routes (generalLimiter: 200 req / 15 min per IP on all API routes) ───────
-// Stricter per-action limiters (orders: 20, feedback: 10) are applied inside
-// the individual route files directly on the POST handlers.
 app.use("/api/products", generalLimiter, productRoutes);
 app.use("/api/orders", generalLimiter, orderRoutes);
 app.use("/api/feedback", generalLimiter, feedbackRoutes);
 app.use("/api/dashboard", generalLimiter, dashboardRoutes);
-
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));

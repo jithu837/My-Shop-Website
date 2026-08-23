@@ -77,46 +77,45 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-connectDB()
-  .then(async () => {
-    await ensureAdminExists();
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 
-    // ── Pre-warm MongoDB BEFORE accepting connections ──────────────────────
-    // Cold MongoDB Atlas M0 can take 30-60s for the first query.
-    // By running the warm-up HERE (before app.listen), the server only opens
-    // to users AFTER the DB is warm — so the very first user request is fast.
-    try {
-      const { default: Product } = await import("./models/Product.js");
-      await Product.find({ isActive: true }).select("_id name").lean().limit(1);
-      console.log("[warm-up] MongoDB product query warmed");
-    } catch (e) {
-      console.log("[warm-up] Warning (non-fatal):", e.message);
-    }
-
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-
-      // ── Keep-alive self-ping ──────────────────────────────────────────────
-      // Render's free tier spins down after ~15 min of inactivity.
-      // Ping every 5 minutes to keep the server always warm.
-      const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
-      if (RENDER_URL) {
-        const pingUrl = `${RENDER_URL}/api/health`;
-        const keepAlive = setInterval(async () => {
-          try {
-            await fetch(pingUrl, { signal: AbortSignal.timeout(10_000) });
-            console.log(`[keep-alive] pinged ${pingUrl}`);
-          } catch {
-            // network blip — ignore
-          }
-        }, 5 * 60 * 1000);
-
-        process.on("SIGTERM", () => clearInterval(keepAlive));
-        process.on("SIGINT",  () => clearInterval(keepAlive));
+  // ── Connect to DB & Warm-up AFTER binding to port ───────────────────────
+  // We bind to the port first so Render's health checks pass immediately and 
+  // the container isn't killed. Mongoose will buffer incoming requests until connected.
+  connectDB()
+    .then(async () => {
+      await ensureAdminExists();
+      
+      try {
+        const { default: Product } = await import("./models/Product.js");
+        await Product.find({ isActive: true }).select("_id name").lean().limit(1);
+        console.log("[warm-up] MongoDB product query warmed");
+      } catch (e) {
+        console.log("[warm-up] Warning (non-fatal):", e.message);
       }
+    })
+    .catch((error) => {
+      console.error(`Server startup failed: ${error.message}`);
+      // Don't process.exit here, let it try to recover or stay up for diagnostics
     });
-  })
-  .catch((error) => {
-    console.error(`Server startup failed: ${error.message}`);
-    process.exit(1);
-  });
+
+  // ── Keep-alive self-ping ──────────────────────────────────────────────
+  // Render's free tier spins down after ~15 min of inactivity.
+  // Ping every 5 minutes to keep the server always warm.
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+  if (RENDER_URL) {
+    const pingUrl = `${RENDER_URL}/api/health`;
+    const keepAlive = setInterval(async () => {
+      try {
+        await fetch(pingUrl, { signal: AbortSignal.timeout(10_000) });
+        console.log(`[keep-alive] pinged ${pingUrl}`);
+      } catch {
+        // network blip — ignore
+      }
+    }, 5 * 60 * 1000);
+
+    process.on("SIGTERM", () => clearInterval(keepAlive));
+    process.on("SIGINT",  () => clearInterval(keepAlive));
+  }
+});

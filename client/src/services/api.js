@@ -17,12 +17,12 @@ const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api` : "/api",
-  timeout: 55000, // 55s — Render free tier cold start can take up to 50s
+  timeout: 30000, // 30s — enough for Render cold start, but not excessively long
 });
 
 // ── Retry interceptor ─────────────────────────────────────────────────────────
 // Render free tier: server sleeps after 15 min, first request gets 502/503.
-// Automatically retry up to 3 times with increasing delay (2s, 4s, 6s).
+// Automatically retry up to 2 times with increasing delay (1s, 2s).
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
@@ -38,9 +38,9 @@ api.interceptors.response.use(
 
     config._retryCount = config._retryCount || 0;
 
-    if (isRetryable && config._retryCount < 3) {
+    if (isRetryable && config._retryCount < 2) {
       config._retryCount++;
-      const delay = config._retryCount * 2000; // 2s, 4s, 6s
+      const delay = config._retryCount * 1000; // 1s, 2s
       await new Promise((r) => setTimeout(r, delay));
       return api(config);
     }

@@ -5,6 +5,12 @@ import App from "./App.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import "./css/global.css";
 
+// ── Pre-warm the Render server as early as possible ───────────────────────────
+// Fire-and-forget: wake the server while the UI paints so product data arrives
+// faster by the time the Home component's useEffect fires.
+import api from "./services/api.js";
+api.get("/health").catch(() => {});
+
 // ── One-time cleanup: remove base64 images from any previously saved cart ──
 // Older versions stored full base64 images, filling up the 5 MB localStorage
 // quota. Strip them out now so existing users stop seeing QuotaExceededError.

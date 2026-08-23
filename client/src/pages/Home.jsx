@@ -1,36 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api.js";
 import ProductCard from "../components/ProductCard.jsx";
+import { getCachedProducts, setCachedProducts } from "../services/productCache.js";
 import "../css/home.css";
 
 const Home = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isWaking, setIsWaking] = useState(false); // true if server cold-starting
+  // ── Stale-While-Revalidate: show cache instantly, refresh in background ──
+  const cached = getCachedProducts();
+  const [products, setProducts] = useState(cached?.data || []);
+  const [loading, setLoading] = useState(!cached); // no spinner if we have cache
+  const [isWaking, setIsWaking] = useState(false);
+  const isMounted = useRef(true);
 
   const loadProducts = (showSpinner = false) => {
     if (showSpinner) setLoading(true);
     api
       .get("/products")
-      .then((res) => setProducts(res.data))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!isMounted.current) return;
+        setProducts(res.data);
+        setCachedProducts(res.data); // update cache for next visit
+      })
+      .finally(() => {
+        if (isMounted.current) setLoading(false);
+      });
   };
 
   useEffect(() => {
-    // Show "waking up" hint if server takes > 3s (Render cold-start)
-    const wakeTimer = setTimeout(() => {
-      if (loading) setIsWaking(true);
-    }, 3000);
+    isMounted.current = true;
 
-    loadProducts(true);
+    // Only show "waking up" hint if we have NO cache and server is slow
+    const wakeTimer = !cached
+      ? setTimeout(() => {
+          if (isMounted.current && loading) setIsWaking(true);
+        }, 3000)
+      : null;
+
+    // Always fetch fresh data — but silently if cache is available
+    loadProducts(!cached);
+
     // Background sync every 30s & on focus — silent, no spinner/flash
     const interval = setInterval(() => loadProducts(false), 30000);
     const onFocus = () => loadProducts(false);
     window.addEventListener("focus", onFocus);
 
     return () => {
-      clearTimeout(wakeTimer);
+      isMounted.current = false;
+      if (wakeTimer) clearTimeout(wakeTimer);
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };

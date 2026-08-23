@@ -1,39 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import api from "../services/api.js";
 import ProductCard from "../components/ProductCard.jsx";
+import { getCachedProducts, setCachedProducts } from "../services/productCache.js";
 import "../css/products.css";
 
 const CATEGORIES = ["All", "Sweets", "Hots", "Snacks", "Combo"];
 
 const Products = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cached = getCachedProducts();
+  const [products, setProducts] = useState(cached?.data || []);
+  const [loading, setLoading] = useState(!cached);
   const [isWaking, setIsWaking] = useState(false);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const isMounted = useRef(true);
+
+  // Can use cache only when filter is default (All + no search)
+  const isDefaultFilter = category === "All" && !search;
 
   const load = (showSpinner = false) => {
     if (showSpinner) setLoading(true);
     api
       .get("/products", { params: { category, search: search || undefined } })
-      .then((res) => setProducts(res.data))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!isMounted.current) return;
+        setProducts(res.data);
+        // Only cache the full unfiltered list
+        if (isDefaultFilter) setCachedProducts(res.data);
+      })
+      .finally(() => {
+        if (isMounted.current) setLoading(false);
+      });
   };
 
   useEffect(() => {
-    // Show waking hint if server takes > 3s (Render cold-start)
-    const wakeTimer = setTimeout(() => {
-      if (loading) setIsWaking(true);
-    }, 3000);
-    // First load (or when filter changes) shows spinner
-    const timer = setTimeout(() => load(true), 250);
+    isMounted.current = true;
+    const canUseCache = isDefaultFilter && cached;
+
+    const wakeTimer = !canUseCache
+      ? setTimeout(() => {
+          if (isMounted.current && loading) setIsWaking(true);
+        }, 3000)
+      : null;
+
+    // When filter changes and it's not default, show spinner immediately
+    if (!isDefaultFilter) {
+      setProducts([]);
+    }
+
+    const timer = setTimeout(() => load(!canUseCache), 250);
     // Background sync every 30s & on window focus — silent, no spinner
     const interval = setInterval(() => load(false), 30000);
     const onFocus = () => load(false);
     window.addEventListener("focus", onFocus);
 
     return () => {
-      clearTimeout(wakeTimer);
+      isMounted.current = false;
+      if (wakeTimer) clearTimeout(wakeTimer);
       clearTimeout(timer);
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);

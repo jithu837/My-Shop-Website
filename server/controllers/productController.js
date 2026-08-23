@@ -29,7 +29,11 @@ export const getProducts = async (req, res) => {
 
     const products = await Product.find(filter).sort({ createdAt: -1 }).lean();
     // Strip any base64 images from the list response to keep payload small
-    res.json(products.map(sanitiseForList));
+    const result = products.map(sanitiseForList);
+
+    // Cache the product list: 60s in browser, 120s on CDN, serve stale up to 5 min
+    res.set("Cache-Control", "public, max-age=60, s-maxage=120, stale-while-revalidate=300");
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: "Could not load products", error: err.message });
   }

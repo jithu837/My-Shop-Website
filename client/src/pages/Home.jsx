@@ -11,16 +11,21 @@ const Home = () => {
   const [products, setProducts] = useState(cached?.data || []);
   const [loading, setLoading] = useState(!cached); // no spinner if we have cache
   const [isWaking, setIsWaking] = useState(false);
+  const [error, setError] = useState(false);
   const isMounted = useRef(true);
 
   const loadProducts = (showSpinner = false) => {
     if (showSpinner) setLoading(true);
+    setError(false);
     api
       .get("/products")
       .then((res) => {
         if (!isMounted.current) return;
         setProducts(res.data);
         setCachedProducts(res.data); // update cache for next visit
+      })
+      .catch(() => {
+        if (isMounted.current) setError(true);
       })
       .finally(() => {
         if (isMounted.current) setLoading(false);
@@ -110,6 +115,18 @@ const Home = () => {
                   ⏳ Server is waking up, please wait a moment…
                 </p>
               )}
+            </div>
+          ) : error && featured.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <p style={{ color: "#888", fontSize: "0.95rem", marginBottom: "16px" }}>
+                ⚠️ Server is waking up. Please try again.
+              </p>
+              <button
+                className="btn btn-primary"
+                onClick={() => loadProducts(true)}
+              >
+                🔄 Retry
+              </button>
             </div>
           ) : featured.length === 0 ? (
             <p className="empty-state">Products coming soon.</p>

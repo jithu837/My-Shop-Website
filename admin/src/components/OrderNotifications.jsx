@@ -212,5 +212,4 @@ const OrderNotifications = ({ orders, isOpen, onClose, onDismiss, onConfirm }) =
   );
 };
 
-export { speak };
 export default OrderNotifications;

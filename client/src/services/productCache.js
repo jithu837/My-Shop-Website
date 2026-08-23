@@ -1,41 +1,55 @@
 /**
  * Product Cache — Stale-While-Revalidate pattern
  *
- * Products are cached in sessionStorage so that on repeat visits or page
- * navigations the UI can render instantly from cache while a background
- * fetch refreshes the data. This eliminates the long spinner wait caused
- * by Render free-tier cold starts (~30-50s).
+ * Products are cached in localStorage (persists across tabs and URL visits)
+ * so that on every visit the UI renders instantly from cache while a
+ * background fetch silently refreshes the data. This eliminates the long
+ * spinner caused by Render free-tier cold starts (~30-50s).
+ *
+ * Cache lifetime: 30 min — long enough to survive typical cold starts while
+ * still showing fresh data for a regular shopping session.
  */
 
-const CACHE_KEY = "products_cache";
-const CACHE_TS_KEY = "products_cache_ts";
-const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes — data is still usable even if slightly stale
+const CACHE_KEY = "products_cache_v2";
+const CACHE_TS_KEY = "products_cache_ts_v2";
+const CACHE_MAX_AGE = 30 * 60 * 1000; // 30 minutes
 
 /**
- * Read cached products from sessionStorage.
+ * Read cached products from localStorage.
  * Returns { data: Product[], age: number } or null.
  */
 export const getCachedProducts = () => {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    const ts = Number(sessionStorage.getItem(CACHE_TS_KEY) || 0);
+    const raw = localStorage.getItem(CACHE_KEY);
+    const ts = Number(localStorage.getItem(CACHE_TS_KEY) || 0);
     if (!raw) return null;
+    const age = Date.now() - ts;
+    // Discard if older than 30 min
+    if (age > CACHE_MAX_AGE) return null;
     const data = JSON.parse(raw);
-    return { data, age: Date.now() - ts };
+    return { data, age };
   } catch {
     return null;
   }
 };
 
 /**
- * Write products to sessionStorage cache.
+ * Write products to localStorage cache.
  */
 export const setCachedProducts = (products) => {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(products));
-    sessionStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
   } catch {
-    // Storage full — silently ignore
+    // Storage full — clear old keys and retry once
+    try {
+      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(CACHE_TS_KEY);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+      localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+    } catch {
+      // Still full — silently ignore
+    }
   }
 };
 

@@ -84,10 +84,23 @@ connectDB()
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
 
+      // ── Startup warm-up: pre-fetch products to warm MongoDB & query cache ──
+      // This runs once 3s after server boot so the very first real user
+      // request hits an already-warm connection instead of a cold one.
+      setTimeout(async () => {
+        try {
+          const { default: Product } = await import("./models/Product.js");
+          await Product.find({ isActive: true }).select("_id name").lean().limit(1);
+          console.log("[warm-up] MongoDB product query warmed");
+        } catch {
+          // Non-critical — ignore
+        }
+      }, 3000);
+
       // ── Keep-alive self-ping ──────────────────────────────────────────────
       // Render's free tier spins down after ~15 min of inactivity, causing
-      // 502/503 cold-start errors. Ping our own /api/health every 14 minutes
-      // to keep the server warm. Node 18+ has built-in global fetch.
+      // 502/503 cold-start errors. Ping our own /api/health every 5 minutes
+      // to keep the server always warm. Node 18+ has built-in global fetch.
       const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
       if (RENDER_URL) {
         const pingUrl = `${RENDER_URL}/api/health`;
@@ -98,7 +111,7 @@ connectDB()
           } catch {
             // network blip — ignore, next ping will try again
           }
-        }, 14 * 60 * 1000); // every 14 minutes
+        }, 5 * 60 * 1000); // every 5 minutes — Render free tier sleeps after 15 min
 
         process.on("SIGTERM", () => clearInterval(keepAlive));
         process.on("SIGINT",  () => clearInterval(keepAlive));

@@ -13,8 +13,11 @@ const Home = () => {
   const [isWaking, setIsWaking] = useState(false);
   const [error, setError] = useState(false);
   const isMounted = useRef(true);
+  const isFetching = useRef(false); // guard: prevents parallel requests from flooding server
 
   const loadProducts = (showSpinner = false) => {
+    if (isFetching.current) return; // skip if a request is already in flight
+    isFetching.current = true;
     if (showSpinner) setLoading(true);
     setError(false);
     api
@@ -28,6 +31,7 @@ const Home = () => {
         if (isMounted.current) setError(true);
       })
       .finally(() => {
+        isFetching.current = false;
         if (isMounted.current) setLoading(false);
       });
   };
@@ -46,8 +50,9 @@ const Home = () => {
     loadProducts(!cached);
 
     // Background sync every 30s & on focus — silent, no spinner/flash
-    const interval = setInterval(() => loadProducts(false), 30000);
-    const onFocus = () => loadProducts(false);
+    // Guard: only fire if no request is already in flight (prevents server DDOS on slow/waking Render)
+    const interval = setInterval(() => { if (!isFetching.current) loadProducts(false); }, 30000);
+    const onFocus = () => { if (!isFetching.current) loadProducts(false); };
     window.addEventListener("focus", onFocus);
 
     return () => {

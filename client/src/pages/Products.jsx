@@ -15,11 +15,14 @@ const Products = () => {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const isMounted = useRef(true);
+  const isFetching = useRef(false); // guard: prevents parallel requests from flooding server
 
   // Can use cache only when filter is default (All + no search)
   const isDefaultFilter = category === "All" && !search;
 
   const load = (showSpinner = false) => {
+    if (isFetching.current) return; // skip if a request is already in flight
+    isFetching.current = true;
     if (showSpinner) setLoading(true);
     setError(false);
     api
@@ -34,6 +37,7 @@ const Products = () => {
         if (isMounted.current) setError(true);
       })
       .finally(() => {
+        isFetching.current = false;
         if (isMounted.current) setLoading(false);
       });
   };
@@ -55,8 +59,9 @@ const Products = () => {
 
     const timer = setTimeout(() => load(!canUseCache), 250);
     // Background sync every 30s & on window focus — silent, no spinner
-    const interval = setInterval(() => load(false), 30000);
-    const onFocus = () => load(false);
+    // Guard: only fire if no request is already in flight (prevents server DDOS on slow/waking Render)
+    const interval = setInterval(() => { if (!isFetching.current) load(false); }, 30000);
+    const onFocus = () => { if (!isFetching.current) load(false); };
     window.addEventListener("focus", onFocus);
 
     return () => {

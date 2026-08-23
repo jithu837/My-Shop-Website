@@ -2,69 +2,44 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api.js";
 import ProductCard from "../components/ProductCard.jsx";
-import { getCachedProducts, setCachedProducts } from "../services/productCache.js";
 import "../css/home.css";
 
 const Home = () => {
-  // Stale-While-Revalidate: show cache instantly, refresh in background
-  const cached = getCachedProducts();
-  const [products, setProducts] = useState(cached?.data || []);
-  const [loading, setLoading] = useState(!cached); // no spinner if we have cache
-  const [serverError, setServerError] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const isMounted = useRef(true);
-  const isFetching = useRef(false); // prevents parallel requests flooding the server
-  const retryTimer = useRef(null);
 
-  const loadProducts = (showSpinner = false) => {
-    if (isFetching.current) return; // skip if a request is already in flight
-    isFetching.current = true;
-    if (showSpinner) setLoading(true);
-    setServerError(false);
-    if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
+  const loadProducts = () => {
+    setLoading(true);
+    setError(false);
 
     api
       .get("/products")
       .then((res) => {
         if (!isMounted.current) return;
         setProducts(res.data);
-        setCachedProducts(res.data); // save to localStorage for instant next visit
       })
       .catch(() => {
         if (!isMounted.current) return;
-        setServerError(true);
-        // Auto-retry after 10s — server may still be waking up
-        retryTimer.current = setTimeout(() => {
-          if (isMounted.current && !isFetching.current) loadProducts(false);
-        }, 10000);
+        setError(true);
       })
       .finally(() => {
-        isFetching.current = false;
         if (isMounted.current) setLoading(false);
       });
   };
 
   useEffect(() => {
     isMounted.current = true;
-    loadProducts(!cached); // show spinner only if no cache
-
-    // Background sync every 30s & on focus — guarded against request floods
-    const interval = setInterval(() => { if (!isFetching.current) loadProducts(false); }, 30000);
-    const onFocus = () => { if (!isFetching.current) loadProducts(false); };
-    window.addEventListener("focus", onFocus);
+    loadProducts();
 
     return () => {
       isMounted.current = false;
-      if (retryTimer.current) clearTimeout(retryTimer.current);
-      clearInterval(interval);
-      window.removeEventListener("focus", onFocus);
     };
   }, []);
 
-  const offers   = products.filter((p) => p.offerPercent > 0).slice(0, 4);
+  const offers = products.filter((p) => p.offerPercent > 0).slice(0, 4);
   const featured = products.slice(0, 8);
-
-  const showSpinner = loading && products.length === 0;
-  const showError   = serverError && products.length === 0 && !loading;
 
   return (
     <>
@@ -112,27 +87,20 @@ const Home = () => {
             <h2>From our tray to your table</h2>
           </div>
 
-          {/* Subtle notice when showing stale cached data */}
-          {serverError && featured.length > 0 && (
-            <p style={{ textAlign: "center", fontSize: "0.82rem", color: "#a0856b", marginBottom: "12px" }}>
-              ⏳ Showing saved products · Reconnecting automatically…
-            </p>
-          )}
-
-          {showSpinner ? (
+          {loading ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <div className="spinner" />
               <p style={{ marginTop: "16px", color: "#888", fontSize: "0.9rem" }}>
-                ⏳ Loading products…
+                Loading fresh products...
               </p>
             </div>
-          ) : showError ? (
+          ) : error ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <p style={{ color: "#888", fontSize: "0.95rem", marginBottom: "16px" }}>
-                ⚠️ Server is starting up. Retrying automatically in 10s…
+                Could not load products at this time.
               </p>
-              <button className="btn btn-primary" onClick={() => loadProducts(true)}>
-                🔄 Retry Now
+              <button className="btn btn-primary" onClick={loadProducts}>
+                Try Again
               </button>
             </div>
           ) : featured.length === 0 ? (

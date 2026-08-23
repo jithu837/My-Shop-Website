@@ -6,19 +6,14 @@ import ProductCard from "../components/ProductCard.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import "../css/productdetail.css";
 
-import { getCachedProducts } from "../services/productCache.js";
-
 const ProductDetail = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
 
-  const cached = getCachedProducts();
-  const initialProduct = cached?.data?.find((p) => p._id === id) || null;
-
-  const [product, setProduct] = useState(initialProduct);
+  const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
-  const [grams, setGrams] = useState(initialProduct?.minOrderGrams || 50);
-  const [loading, setLoading] = useState(!initialProduct);
+  const [grams, setGrams] = useState(50);
+  const [loading, setLoading] = useState(true);
 
   const [rating, setRating] = useState(5);
   const [feedbackMsg, setFeedbackMsg] = useState("");
@@ -26,17 +21,14 @@ const ProductDetail = () => {
   const [feedbackSent, setFeedbackSent] = useState(false);
 
   useEffect(() => {
-    if (!product) {
-      setLoading(true);
-    }
+    setLoading(true);
+    
     Promise.all([
       api.get(`/products/${id}`),
       api.get(`/products/${id}/related`),
     ]).then(([p, r]) => {
       setProduct(p.data);
-      if (!product) {
-        setGrams(p.data.minOrderGrams || 50);
-      }
+      setGrams(p.data.minOrderGrams || 50);
       setRelated(r.data);
     }).finally(() => setLoading(false));
   }, [id]);

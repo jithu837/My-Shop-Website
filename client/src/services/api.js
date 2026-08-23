@@ -17,7 +17,7 @@ const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api` : "/api",
-  timeout: 30000, // 30s — enough for Render cold start, but not excessively long
+  timeout: 60000, // 60s — cold MongoDB Atlas M0 can take up to 60s for first query
 });
 
 // ── Retry interceptor ─────────────────────────────────────────────────────────

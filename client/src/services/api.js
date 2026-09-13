@@ -9,7 +9,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 
 const api = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api` : "/api",
-  timeout: 60000, // 60s — cold MongoDB Atlas M0 can take up to 60s for first query
+  timeout: 15000,
 });
 
 // ── Retry interceptor ─────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ api.interceptors.response.use(
 
     const status = err.response?.status;
     const isRetryable =
-      !err.response || // network error / no response at all
+      (!err.response && !import.meta.env.DEV) || // retry network errors only in production
       status === 502 ||
       status === 503 ||
       status === 504;

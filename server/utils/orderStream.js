@@ -9,7 +9,18 @@ export const removeClient = (res) => clients.delete(res);
 
 /** Push a new-order event to every connected admin browser tab. */
 export const emitNewOrder = (order) => {
-  const payload = `data: ${JSON.stringify(order)}\n\n`;
+  const payload = `data: ${JSON.stringify({ ...order, __event: "new-order" })}\n\n`;
+  for (const res of clients) {
+    try {
+      res.write(payload);
+    } catch {
+      clients.delete(res);
+    }
+  }
+};
+
+export const emitOrderUpdate = (order) => {
+  const payload = `data: ${JSON.stringify({ ...order, __event: "order-updated" })}\n\n`;
   for (const res of clients) {
     try {
       res.write(payload);

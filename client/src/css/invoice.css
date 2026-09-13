@@ -21,6 +21,36 @@
 }
 .invoice-success-banner h2 { margin-bottom: 2px; font-size: 1.3rem; }
 .invoice-success-banner p { margin: 0; }
+.payment-state { margin-top: 6px !important; color: var(--color-terracotta); font-family: var(--font-utility); font-weight: 700; }
+.payment-state.is-paid { color: var(--color-success); }
+
+.payment-success-screen {
+  min-height: calc(100vh - 76px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  background: radial-gradient(circle at center, rgba(63,107,61,0.13), var(--color-cream) 56%);
+  animation: payment-screen-in 0.35s ease-out both;
+}
+.payment-success-check {
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: white;
+  font-size: 4rem;
+  box-shadow: 0 0 0 14px rgba(63,107,61,0.13), 0 12px 30px rgba(43,27,20,0.2);
+  animation: payment-check-pop 0.55s 0.1s ease-out both;
+}
+.payment-success-screen h1 { margin: 18px 0 8px; }
+.payment-token { margin: 18px 0 26px; color: var(--color-maroon); font-family: var(--font-display); font-size: 3.8rem; }
+@keyframes payment-screen-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes payment-check-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .invoice { padding: 32px; max-width: 720px; margin: 0 auto; }
 

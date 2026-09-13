@@ -1,6 +1,16 @@
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
-import { emitNewOrder } from "../utils/orderStream.js";
+import crypto from "node:crypto";
+import Razorpay from "razorpay";
+import { emitNewOrder, emitOrderUpdate } from "../utils/orderStream.js";
+
+const getRazorpay = () => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) return null;
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+};
 
 // Customer: place a new order. Validates stock, deducts it, computes totals
 // server-side (never trusts prices sent from the browser).
@@ -74,16 +84,84 @@ export const createOrder = async (req, res) => {
       couponCode: couponCode || "",
       discount,
       total,
-      paymentMethod,
+      paymentMethod:
+        paymentMethod === "Razorpay"
+          ? "Razorpay"
+          : paymentMethod === "UPI"
+            ? "UPI"
+            : type === "Counter"
+              ? "Cash"
+              : "COD",
       paymentStatus: "Pending",
     });
 
+    let razorpayOrder = null;
+    if (paymentMethod === "Razorpay") {
+      const razorpay = getRazorpay();
+      if (!razorpay) {
+        return res.status(503).json({ message: "Razorpay is not configured on the server" });
+      }
+      razorpayOrder = await razorpay.orders.create({
+        amount: total * 100,
+        currency: "INR",
+        receipt: `order_${order.orderNumber}`,
+        notes: { orderId: order._id.toString() },
+      });
+      order.razorpayOrderId = razorpayOrder.id;
+      await order.save();
+    }
+
     // Push real-time notification to every connected admin tab.
     emitNewOrder(order);
+    if (process.send) {
+      process.send({
+        type: "new-order",
+        order,
+        sourceWorkerId: process.env.NODE_UNIQUE_ID ? Number(process.env.NODE_UNIQUE_ID) : undefined,
+      });
+    }
 
-    res.status(201).json(order);
+    res.status(201).json({
+      ...order.toObject(),
+      razorpayOrder,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
+    });
   } catch (err) {
     res.status(500).json({ message: "Could not place order", error: err.message });
+  }
+};
+
+export const verifyRazorpayPayment = async (req, res) => {
+  try {
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    if (!orderId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return res.status(400).json({ message: "Incomplete Razorpay payment details" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order || order.razorpayOrderId !== razorpayOrderId) {
+      return res.status(400).json({ message: "Payment order could not be matched" });
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    const valid = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature),
+      Buffer.from(razorpaySignature)
+    );
+    if (!valid) return res.status(400).json({ message: "Invalid payment signature" });
+
+    order.paymentStatus = "Paid";
+    order.razorpayPaymentId = razorpayPaymentId;
+    await order.save();
+    emitOrderUpdate(order);
+    if (process.send) process.send({ type: "order-updated", order });
+    res.json({ message: "Payment verified", order });
+  } catch (err) {
+    res.status(500).json({ message: "Could not verify payment", error: err.message });
   }
 };
 
@@ -96,6 +174,8 @@ export const confirmPayment = async (req, res) => {
     if (!order) return res.status(404).json({ message: "Order not found" });
     order.paymentStatus = "Paid";
     await order.save();
+    emitOrderUpdate(order);
+    if (process.send) process.send({ type: "order-updated", order });
     res.json(order);
   } catch (err) {
     res.status(500).json({ message: "Could not confirm payment", error: err.message });
@@ -146,6 +226,8 @@ export const updateOrderStatus = async (req, res) => {
     if (paymentStatus) order.paymentStatus = paymentStatus;
 
     await order.save();
+    emitOrderUpdate(order);
+    if (process.send) process.send({ type: "order-updated", order });
     res.json(order);
   } catch (err) {
     res.status(500).json({ message: "Could not update order", error: err.message });

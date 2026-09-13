@@ -6,6 +6,7 @@ import {
   getOrdersByPhone,
   getAllOrders,
   updateOrderStatus,
+  verifyRazorpayPayment,
 } from "../controllers/orderController.js";
 import { orderLimiter } from "../middleware/rateLimiters.js";
 import { addClient, removeClient } from "../utils/orderStream.js";
@@ -15,6 +16,7 @@ const router = express.Router();
 // Admin (login removed — direct access)
 // IMPORTANT: GET "/" must come BEFORE GET "/:id" or Express will never reach it.
 router.get("/", getAllOrders);
+router.post("/verify-razorpay", verifyRazorpayPayment);
 router.patch("/:id/status", updateOrderStatus);
 
 // ── SSE stream — admin panels subscribe here for real-time order alerts ──────

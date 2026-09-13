@@ -68,6 +68,22 @@ Visit:
 - Customer site: **http://localhost:5173**
 - Admin panel: **http://localhost:5174** (direct access, no login required — keep this URL private)
 
+### Run multiple API workers
+
+The API supports an opt-in Node cluster mode. Workers share port `5000`, so the
+Node listener distributes incoming requests across them. New-order SSE events
+are forwarded between workers through the primary process.
+
+PowerShell:
+
+```powershell
+$env:CLUSTER_WORKERS=4
+npm start --prefix server
+```
+
+Set `CLUSTER_WORKERS` in the production service environment. Keep it close to
+the number of available CPU cores; the default is one worker.
+
 ## 4. How things work
 
 **Gram-based pricing** — every product stores a single `pricePerKg`. All gram prices (50g, 100g, 1kg...) are calculated automatically: `price = pricePerKg × (grams / 1000)`. Stock is also tracked in grams, so partial-kg sales reduce it precisely.

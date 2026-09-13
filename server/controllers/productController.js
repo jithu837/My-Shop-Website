@@ -27,13 +27,50 @@ export const getProducts = async (req, res) => {
     if (category && category !== "All") filter.category = category;
     if (search) filter.name = { $regex: search, $options: "i" };
 
-    const products = await Product.find(filter).sort({ createdAt: -1 }).lean();
-    // Strip any base64 images from the list response to keep payload small
-    const result = products.map(sanitiseForList);
-
+    const productQuery = Product.aggregate([
+      { $match: filter },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          category: 1,
+          image: {
+            $cond: [
+              { $regexMatch: { input: { $ifNull: ["$image", ""] }, regex: /^data:/ } },
+              "",
+              { $ifNull: ["$image", ""] },
+            ],
+          },
+          hasLegacyImage: {
+            $regexMatch: { input: { $ifNull: ["$image", ""] }, regex: /^data:/ },
+          },
+          pricePerKg: 1,
+          stockGrams: 1,
+          lowStockThresholdGrams: 1,
+          minOrderGrams: 1,
+          stepGrams: 1,
+          maxOrderGrams: 1,
+          offerPercent: 1,
+          isActive: 1,
+          ratingAvg: 1,
+          ratingCount: 1,
+          soldGrams: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          inStock: { $and: ["$isActive", { $gt: ["$stockGrams", 0] }] },
+        },
+      },
+    ]).option({ maxTimeMS: 8000 });
+    const products = await Promise.race([
+      productQuery,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Product query timed out")), 8000)
+      ),
+    ]);
     // Cache the product list: 60s in browser, 120s on CDN, serve stale up to 5 min
     res.set("Cache-Control", "public, max-age=60, s-maxage=120, stale-while-revalidate=300");
-    res.json(result);
+    res.json(products);
   } catch (err) {
     res.status(500).json({ message: "Could not load products", error: err.message });
   }

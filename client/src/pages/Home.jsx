@@ -44,27 +44,11 @@ const Home = () => {
   return (
     <>
       <section className="hero">
-        <div className="container hero-inner">
-          <div className="hero-copy">
-            <span className="eyebrow">Home-made · Fresh Daily · Weighed to the Gram</span>
-            <h1>Chamundeshwari Home Sweets &amp; Hots</h1>
-            <p>
-              Traditional Andhra sweets and crunchy hots, made the way home kitchens make
-              them - slow, honest, and full of ghee. Order exactly how much you need,
-              from 50 grams to a full kilo.
-            </p>
-            <div className="hero-actions">
-              <Link to="/products" className="btn btn-brass">Browse the Shop</Link>
-              <Link to="/about" className="btn btn-outline">Our Story</Link>
-            </div>
-          </div>
-          <div className="hero-plate">
-            <div className="hero-plate-ring">
-              <span>21</span>
-              <small>fresh varieties</small>
-            </div>
-          </div>
-        </div>
+        <img
+          className="hero-banner-image"
+          src="/hero-banner.png"
+          alt="Chamundeshwari Home Sweets traditional sweets banner"
+        />
       </section>
 
       {offers.length > 0 && (
@@ -106,7 +90,7 @@ const Home = () => {
           ) : featured.length === 0 ? (
             <p className="empty-state">Products coming soon.</p>
           ) : (
-            <div className="product-grid">
+            <div className="product-grid home-featured-grid">
               {featured.map((p) => (
                 <ProductCard key={p._id} product={p} />
               ))}

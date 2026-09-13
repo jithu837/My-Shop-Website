@@ -8,13 +8,43 @@ const OrderSuccess = () => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   useEffect(() => {
-    api.get(`/orders/${id}`).then((res) => setOrder(res.data)).finally(() => setLoading(false));
+    let active = true;
+    const load = () => api.get(`/orders/${id}`).then((res) => {
+      if (!active) return;
+      setOrder((previous) => {
+        if (previous?.paymentStatus !== "Paid" && res.data.paymentStatus === "Paid") {
+          setPaymentConfirmed(true);
+        }
+        return res.data;
+      });
+    }).finally(() => active && setLoading(false));
+
+    load();
+    const timer = setInterval(load, 2000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
   }, [id]);
 
   if (loading) return <div className="spinner" />;
   if (!order) return <p className="empty-state">Order not found.</p>;
+
+  if (paymentConfirmed) {
+    return (
+      <section className="payment-success-screen">
+        <div className="payment-success-check">✓</div>
+        <p className="eyebrow">Payment received</p>
+        <h1>Amount paid successfully</h1>
+        <p>Show this token at the shop counter.</p>
+        <div className="payment-token">#{order.orderNumber}</div>
+        <Link to="/products" className="btn btn-primary">Continue Shopping</Link>
+      </section>
+    );
+  }
 
   return (
     <section className="section">
@@ -23,7 +53,10 @@ const OrderSuccess = () => {
           <span className="invoice-success-icon">✓</span>
           <div>
             <h2>Order placed successfully!</h2>
-            <p>Your order number is <strong>{order.orderNumber}</strong></p>
+            <p>Your order token is <strong>#{order.orderNumber}</strong></p>
+            <p className={`payment-state ${order.paymentStatus === "Paid" ? "is-paid" : ""}`}>
+              {order.paymentStatus === "Paid" ? "✓ Payment received" : "Payment pending"}
+            </p>
           </div>
         </div>
 

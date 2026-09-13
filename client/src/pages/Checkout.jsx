@@ -1,19 +1,23 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
 import "../css/checkout.css";
 
-// Shop's UPI details — set in client/.env so you never need to touch source code
-const UPI_ID = import.meta.env.VITE_UPI_ID || "7816096147@naviaxis";
-const UPI_PAYEE_NAME = import.meta.env.VITE_UPI_PAYEE_NAME || "G JITHENDRA KUMAR";
-const SHOP_NOTE = import.meta.env.VITE_SHOP_NAME || "Chamundeshwari Home Sweets";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+
+const loadRazorpay = () => new Promise((resolve, reject) => {
+  if (window.Razorpay) return resolve(true);
+  const script = document.createElement("script");
+  script.src = "https://checkout.razorpay.com/v1/checkout.js";
+  script.onload = () => resolve(true);
+  script.onerror = () => reject(new Error("Could not load Razorpay Checkout"));
+  document.body.appendChild(script);
+});
 
 const Checkout = () => {
   const { items, subtotal, lineTotal, clearCart } = useCart();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [form, setForm] = useState({
     customerName: "",
@@ -21,21 +25,11 @@ const Checkout = () => {
     customerAddress: "",
     customerEmail: "",
   });
-  const [couponCode, setCouponCode] = useState(location.state?.coupon || "");
-  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [orderRole, setOrderRole] = useState("Delivery");
+  const [paymentMethod, setPaymentMethod] = useState("Razorpay");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
-  const [upiError, setUpiError] = useState("");
-  const [placedOrder, setPlacedOrder] = useState(null); // shown once order is created, before UPI confirm
-
-  const discount = couponCode.toUpperCase() === "SWEET10" ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal - discount;
-
-  const upiLink = placedOrder
-    ? `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE_NAME)}&am=${placedOrder.total}&cu=INR&tn=${encodeURIComponent(
-        `${SHOP_NOTE} - ${placedOrder.orderNumber}`
-      )}`
-    : "";
+  const total = subtotal;
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -47,16 +41,46 @@ const Checkout = () => {
     try {
       const { data } = await api.post("/orders", {
         ...form,
+        orderType: orderRole,
+        customerAddress: orderRole === "Delivery" ? form.customerAddress : "Shop counter pickup",
         items: items.map((i) => ({ productId: i.productId, name: i.name, grams: i.grams })),
         paymentMethod,
-        couponCode,
       });
 
       if (paymentMethod === "COD") {
         clearCart();
         navigate(`/order-success/${data._id}`);
       } else {
-        setPlacedOrder(data); // show QR next, cart cleared after payment confirmation
+        await loadRazorpay();
+        if (!RAZORPAY_KEY_ID || !data.razorpayOrder) {
+          throw new Error("Razorpay is not configured. Add the public key to client/.env.");
+        }
+        const razorpay = new window.Razorpay({
+          key: RAZORPAY_KEY_ID,
+          amount: data.razorpayOrder.amount,
+          currency: data.razorpayOrder.currency,
+          name: "Chamundeshwari Home Sweets",
+          description: `Order #${data.orderNumber}`,
+          order_id: data.razorpayOrder.id,
+          prefill: { name: form.customerName, contact: form.customerPhone, email: form.customerEmail },
+          theme: { color: "#6B1E23" },
+          handler: async (payment) => {
+            try {
+              await api.post("/orders/verify-razorpay", {
+                orderId: data._id,
+                razorpayOrderId: payment.razorpay_order_id,
+                razorpayPaymentId: payment.razorpay_payment_id,
+                razorpaySignature: payment.razorpay_signature,
+              });
+              clearCart();
+              navigate(`/order-success/${data._id}`);
+            } catch (verificationError) {
+              setError(verificationError.response?.data?.message || "Payment verification failed.");
+            }
+          },
+          modal: { ondismiss: () => setError("Payment was cancelled. You can try again.") },
+        });
+        razorpay.open();
       }
     } catch (err) {
       setError(err.response?.data?.message || "Could not place order. Please try again.");
@@ -65,54 +89,11 @@ const Checkout = () => {
     }
   };
 
-  const confirmUpiPayment = async () => {
-    setUpiError("");
-    try {
-      await api.patch(`/orders/${placedOrder._id}/confirm-payment`);
-      clearCart();
-      navigate(`/order-success/${placedOrder._id}`);
-    } catch (err) {
-      setUpiError(err.response?.data?.message || "Could not confirm payment. Please try again.");
-    }
-  };
-
   // Empty cart guard — moved into an effect so navigation is never called during render
   // (which triggers React's "cannot update during render" warning).
   React.useEffect(() => {
-    if (items.length === 0 && !placedOrder) navigate("/products");
-  }, [items.length, placedOrder, navigate]);
-
-  // Step 2: UPI QR screen, shown after the order is created
-  if (placedOrder) {
-    return (
-      <section className="section">
-        <div className="container checkout-upi">
-          <div className="card checkout-upi-card">
-            <span className="eyebrow">Scan &amp; Pay</span>
-            <h2>₹{placedOrder.total}</h2>
-            <p>Order #{placedOrder.orderNumber}</p>
-
-            <div className="checkout-qr-wrap">
-              <QRCodeSVG value={upiLink} size={220} bgColor="#FFFDF9" fgColor="#2B1B14" />
-            </div>
-
-            <p className="checkout-upi-hint">
-              Scan with Google Pay, PhonePe, Paytm, Navi or any BHIM UPI app. The amount is filled in automatically.
-            </p>
-            <p className="checkout-upi-id">UPI ID: {UPI_ID}</p>
-
-            <button className="btn btn-primary" onClick={confirmUpiPayment}>
-              I've Paid — Confirm Payment
-            </button>
-            {upiError && <p className="checkout-error">{upiError}</p>}
-            <p className="checkout-upi-note">
-              Your order is saved. Once you confirm, the shop owner will verify and start preparing it.
-            </p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+    if (items.length === 0) navigate("/products");
+  }, [items.length, navigate]);
 
   // Step 1: details + payment method
   return (
@@ -135,26 +116,47 @@ const Checkout = () => {
               <input required name="customerPhone" value={form.customerPhone} onChange={handleChange} pattern="[0-9]{10}" title="10 digit phone number" />
             </div>
             <div className="form-group">
+              <label>{orderRole === "Delivery" ? "Delivery address" : "Pickup note"}</label>
+              <textarea
+                required={orderRole === "Delivery"}
+                name="customerAddress"
+                value={form.customerAddress}
+                onChange={handleChange}
+                rows="3"
+                placeholder={orderRole === "Delivery" ? "House / street / area" : "Optional note for the shop"}
+              />
+            </div>
+            <div className="form-group">
               <label>Email (optional)</label>
               <input type="email" name="customerEmail" value={form.customerEmail} onChange={handleChange} />
             </div>
 
             <h3>Payment Method</h3>
+            <div className="checkout-role-options">
+              <label className={`checkout-role-option ${orderRole === "Delivery" ? "is-selected" : ""}`}>
+                <input type="radio" name="orderRole" checked={orderRole === "Delivery"} onChange={() => setOrderRole("Delivery")} />
+                Online delivery
+              </label>
+              <label className={`checkout-role-option ${orderRole === "Counter" ? "is-selected" : ""}`}>
+                <input type="radio" name="orderRole" checked={orderRole === "Counter"} onChange={() => setOrderRole("Counter")} />
+                At shop / counter
+              </label>
+            </div>
             <div className="checkout-payment-options">
               <label className={`checkout-payment-option ${paymentMethod === "COD" ? "is-selected" : ""}`}>
                 <input type="radio" name="paymentMethod" checked={paymentMethod === "COD"} onChange={() => setPaymentMethod("COD")} />
-                Cash in Store
+                {orderRole === "Delivery" ? "Cash on Delivery" : "Cash at Shop"}
               </label>
-              <label className={`checkout-payment-option ${paymentMethod === "UPI" ? "is-selected" : ""}`}>
-                <input type="radio" name="paymentMethod" checked={paymentMethod === "UPI"} onChange={() => setPaymentMethod("UPI")} />
-                UPI (Scan &amp; Pay)
+              <label className={`checkout-payment-option ${paymentMethod === "Razorpay" ? "is-selected" : ""}`}>
+                <input type="radio" name="paymentMethod" checked={paymentMethod === "Razorpay"} onChange={() => setPaymentMethod("Razorpay")} />
+                Pay securely with Razorpay
               </label>
             </div>
 
             {error && <p className="checkout-error">{error}</p>}
 
             <button className="btn btn-primary checkout-submit" disabled={placing}>
-              {placing ? "Placing Order..." : paymentMethod === "UPI" ? "Continue to UPI Payment" : "Place Order"}
+              {placing ? "Opening Payment..." : paymentMethod === "Razorpay" ? "Pay Securely" : "Place Order"}
             </button>
           </form>
 
@@ -166,16 +168,6 @@ const Checkout = () => {
                 <span>₹{lineTotal(i)}</span>
               </div>
             ))}
-            <div className="form-group">
-              <label>Coupon code</label>
-              <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} />
-            </div>
-            {discount > 0 && (
-              <div className="checkout-summary-row">
-                <span>Discount</span>
-                <span>−₹{discount}</span>
-              </div>
-            )}
             <div className="cart-summary-total">
               <span>Total</span>
               <span>₹{total}</span>

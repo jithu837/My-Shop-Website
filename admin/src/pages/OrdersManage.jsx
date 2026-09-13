@@ -26,7 +26,9 @@ const OrdersManage = () => {
   useEffect(() => { load(); }, [load]);
 
   // Also auto-refresh when a new order comes in via the SSE stream.
-  useOrderStream(load);
+  useOrderStream((event) => {
+    if (event.__event === "order-updated" || event.__event === "new-order") load();
+  });
 
   const updateStatus = async (id, status) => {
     try {

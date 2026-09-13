@@ -11,6 +11,7 @@ const AdminLayout = () => {
 
   // useCallback keeps the reference stable so useOrderStream never re-subscribes.
   const handleNewOrder = useCallback((order) => {
+    if (order.__event === "order-updated") return;
     // 1. Announce with voice
     speak(order);
     // 2. Add to the visible notification stack

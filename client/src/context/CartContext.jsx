@@ -67,6 +67,7 @@ export const CartProvider = ({ children }) => {
           productId: product._id,
           name: product.name,
           image: product.image, // kept in React state for display; stripped if base64 before save
+          hasLegacyImage: Boolean(product.hasLegacyImage),
           pricePerKg: product.pricePerKg,
           offerPercent: product.offerPercent || 0,
           stepGrams: product.stepGrams || 50,

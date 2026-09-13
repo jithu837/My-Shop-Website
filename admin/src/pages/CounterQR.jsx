@@ -6,7 +6,7 @@ import "../css/admin.css";
 // Point it to the live public website so a scan opens the shop homepage.
 const CounterQR = () => {
   const qrRef = useRef(null);
-  const siteUrl = (import.meta.env.VITE_PUBLIC_SITE_URL || "https://your-site-name.vercel.app").replace(/\/$/, "");
+  const siteUrl = `${(import.meta.env.VITE_PUBLIC_SITE_URL || "https://your-site-name.vercel.app").replace(/\/$/, "")}/order`;
 
   const downloadQR = () => {
     const svg = qrRef.current.querySelector("svg");

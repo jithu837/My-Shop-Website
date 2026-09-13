@@ -6,16 +6,36 @@ import "../css/admin.css";
 const Dashboard = () => {
   const [summary, setSummary] = useState(null);
   const [graph, setGraph] = useState([]);
+  const [error, setError] = useState("");
 
   const load = useCallback(() => {
-    api.get("/dashboard/summary").then((res) => setSummary(res.data));
-    api.get("/dashboard/revenue-graph").then((res) => setGraph(res.data));
+    setError("");
+    Promise.all([
+      api.get("/dashboard/summary"),
+      api.get("/dashboard/revenue-graph"),
+    ])
+      .then(([summaryResponse, graphResponse]) => {
+        setSummary(summaryResponse.data);
+        setGraph(graphResponse.data);
+      })
+      .catch((requestError) => {
+        setError(requestError.response?.data?.message || "Could not load dashboard data.");
+      });
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   // Auto-refresh dashboard stats whenever a new order is placed.
   useOrderStream(load);
+
+  if (error) {
+    return (
+      <div className="admin-load-error">
+        <p>{error}</p>
+        <button className="btn btn-primary" onClick={load}>Try Again</button>
+      </div>
+    );
+  }
 
   if (!summary) return <div className="spinner" />;
 

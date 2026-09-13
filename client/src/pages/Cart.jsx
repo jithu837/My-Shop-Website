@@ -8,8 +8,6 @@ import "../css/cart.css";
 const Cart = () => {
   const { items, updateGrams, removeFromCart, lineTotal, subtotal } = useCart();
   const navigate = useNavigate();
-  const [coupon, setCoupon] = useState("");
-
   if (items.length === 0) {
     return (
       <section className="section">
@@ -34,7 +32,18 @@ const Cart = () => {
           <div className="cart-items">
             {items.map((item) => (
               <div className="cart-item" key={item.productId}>
-                <img src={imageUrl(item.image)} alt={item.name} />
+                <img
+                  src={imageUrl({
+                    _id: item.productId,
+                    image: item.image,
+                    hasLegacyImage: item.hasLegacyImage || !item.image,
+                  })}
+                  alt={item.name}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/placeholder-sweet.svg";
+                  }}
+                />
                 <div className="cart-item-info">
                   <h3>{item.name}</h3>
                   <div className="cart-item-price">₹{item.pricePerKg} / kg</div>
@@ -63,20 +72,15 @@ const Cart = () => {
               <span>₹{subtotal}</span>
             </div>
 
-            <div className="form-group">
-              <label>Coupon code</label>
-              <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} placeholder="e.g. SWEET10" />
-            </div>
-
             <div className="cart-summary-total">
               <span>To Pay</span>
               <span>₹{subtotal}</span>
             </div>
-            <p className="cart-summary-note">Coupon discount, if valid, is applied at checkout.</p>
+            <p className="cart-summary-note">Secure online payments are available at checkout.</p>
 
             <button
               className="btn btn-primary cart-checkout-btn"
-              onClick={() => navigate("/checkout", { state: { coupon } })}
+              onClick={() => navigate("/checkout")}
             >
               Proceed to Checkout
             </button>

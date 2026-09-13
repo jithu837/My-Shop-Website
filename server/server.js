@@ -1,12 +1,15 @@
 import express from "express";
+import cluster from "node:cluster";
 import cors from "cors";
 import compression from "compression";
 import dotenv from "dotenv";
 import fs from "fs";
+import os from "node:os";
 import path from "path";
 import connectDB from "./config/db.js";
 import { ensureAdminExists } from "./controllers/authController.js";
 import { generalLimiter } from "./middleware/rateLimiters.js";
+import { emitNewOrder, emitOrderUpdate } from "./utils/orderStream.js";
 
 import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
@@ -76,8 +79,37 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const configuredWorkers = Number.parseInt(process.env.CLUSTER_WORKERS || "1", 10);
+const workerCount = Math.max(1, Math.min(configuredWorkers || 1, os.cpus().length));
 
-app.listen(PORT, () => {
+if (cluster.isPrimary && workerCount > 1) {
+  console.log(`[cluster] primary ${process.pid} starting ${workerCount} workers`);
+
+  for (let index = 0; index < workerCount; index += 1) cluster.fork();
+
+  cluster.on("message", (worker, message) => {
+    if (!message?.type || !["new-order", "order-updated"].includes(message.type)) return;
+
+    for (const target of Object.values(cluster.workers)) {
+      if (target?.isConnected() && target.id !== message.sourceWorkerId) {
+        target.send(message);
+      }
+    }
+  });
+
+  cluster.on("exit", (worker) => {
+    console.warn(`[cluster] worker ${worker.process.pid} exited; restarting`);
+    cluster.fork();
+  });
+} else {
+  if (cluster.isWorker) {
+    process.on("message", (message) => {
+      if (message?.type === "new-order") emitNewOrder(message.order);
+      if (message?.type === "order-updated") emitOrderUpdate(message.order);
+    });
+  }
+
+  app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 
   // ── Connect to DB & Warm-up AFTER binding to port ───────────────────────
@@ -118,4 +150,5 @@ app.listen(PORT, () => {
     process.on("SIGTERM", () => clearInterval(keepAlive));
     process.on("SIGINT",  () => clearInterval(keepAlive));
   }
-});
+  });
+}

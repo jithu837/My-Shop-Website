@@ -24,11 +24,24 @@ const CounterOrder = () => {
   const [category, setCategory] = useState("All");
   const [step, setStep] = useState("browse"); // browse -> pay -> upi-qr -> done
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
   const [upiError, setUpiError] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (!placedOrder || placedOrder.paymentStatus === "Paid") return undefined;
+    const timer = setInterval(() => {
+      api.get(`/orders/${placedOrder._id}`).then(({ data }) => {
+        if (data.paymentStatus === "Paid") setPaymentConfirmed(true);
+        setPlacedOrder(data);
+      }).catch(() => {});
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [placedOrder?._id, placedOrder?.paymentStatus]);
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +65,7 @@ const CounterOrder = () => {
       const { data } = await api.post("/orders", {
         orderType: "Counter",
         customerName: customerName || "Walk-in Customer",
+        customerPhone,
         items: items.map((i) => ({ productId: i.productId, name: i.name, grams: i.grams })),
         paymentMethod,
       });
@@ -85,6 +99,7 @@ const CounterOrder = () => {
   const startOver = () => {
     setPlacedOrder(null);
     setCustomerName("");
+    setCustomerPhone("");
     setPaymentMethod("Cash");
     setError("");
     setStep("browse");
@@ -92,6 +107,18 @@ const CounterOrder = () => {
 
   // ---- Step: Done (order confirmed / cash order placed) ----
   if (step === "done" && placedOrder) {
+    if (paymentConfirmed) {
+      return (
+        <section className="payment-success-screen">
+          <div className="payment-success-check">✓</div>
+          <p className="eyebrow">Payment received</p>
+          <h1>Amount paid successfully</h1>
+          <p>Show this token at the shop counter.</p>
+          <div className="payment-token">#{placedOrder.orderNumber}</div>
+          <button className="btn btn-primary" onClick={startOver}>Place Another Order</button>
+        </section>
+      );
+    }
     return (
       <section className="section counter-page">
         <div className="container counter-done">
@@ -185,6 +212,10 @@ const CounterOrder = () => {
             <div className="form-group">
               <label>Your name (optional, helps us call out your order)</label>
               <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Ramesh" />
+            </div>
+            <div className="form-group">
+              <label>Mobile number</label>
+              <input required value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} pattern="[0-9]{10}" title="10 digit phone number" placeholder="10 digit mobile number" />
             </div>
 
             <h3>Payment</h3>

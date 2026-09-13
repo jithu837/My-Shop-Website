@@ -35,7 +35,9 @@ export const getDashboardSummary = async (req, res) => {
         Order.countDocuments({ status: "Delivered" }),
         Order.countDocuments({ status: "Cancelled" }),
         Order.find().select("customerPhone").lean(),
-        Product.find().lean(),
+        Product.find()
+          .select("name category pricePerKg stockGrams lowStockThresholdGrams soldGrams isActive")
+          .lean(),
         Feedback.find().lean(),
       ]);
 

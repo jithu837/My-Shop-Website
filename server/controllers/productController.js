@@ -272,24 +272,31 @@ export const toggleProductStock = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // If client passes explicit boolean, use it; otherwise invert
-    if (typeof req.body.isAvailable === "boolean") {
-      product.isAvailable = req.body.isAvailable;
-    } else if (req.body.isAvailable === "true" || req.body.isAvailable === "false") {
-      product.isAvailable = req.body.isAvailable === "true";
+    const body = req.body || {};
+    let targetAvailable;
+
+    if (typeof body.isAvailable === "boolean") {
+      targetAvailable = body.isAvailable;
+    } else if (body.isAvailable === "true" || body.isAvailable === "false") {
+      targetAvailable = body.isAvailable === "true";
+    } else if (req.query.isAvailable !== undefined) {
+      targetAvailable = req.query.isAvailable === "true";
     } else {
-      product.isAvailable = product.isAvailable === false ? true : false;
+      targetAvailable = product.isAvailable === false ? true : false;
     }
 
-    // If toggling to In Stock and current stock is 0 or less, replenish with default stock
-    if (product.isAvailable && product.stockGrams <= 0) {
-      product.stockGrams = 5000; // 5kg
-    } else if (!product.isAvailable) {
-      // Keep stockGrams or let isAvailable flag govern out-of-stock
+    const update = { isAvailable: targetAvailable };
+    if (targetAvailable && (!product.stockGrams || product.stockGrams <= 0)) {
+      update.stockGrams = 5000; // 5kg default
     }
 
-    await product.save();
-    res.json(product);
+    const updated = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $set: update },
+      { new: true }
+    );
+
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ message: "Could not update product availability", error: err.message });
   }

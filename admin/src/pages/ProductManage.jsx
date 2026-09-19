@@ -88,7 +88,11 @@ const ProductManage = () => {
       )
     );
     try {
-      await api.patch(`/products/${id}/stock`, { isAvailable: nextAvailability });
+      await api.patch(
+        `/products/${id}/stock`,
+        { isAvailable: nextAvailability },
+        { params: { isAvailable: nextAvailability } }
+      );
     } catch (err) {
       alert(err.response?.data?.message || "Could not update product stock status");
       load();

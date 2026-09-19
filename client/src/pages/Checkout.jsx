@@ -4,7 +4,7 @@ import api from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
 import "../css/checkout.css";
 
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_Te0OeStHnJXmrQ";
 
 const loadRazorpay = () => new Promise((resolve, reject) => {
   if (window.Razorpay) return resolve(true);
@@ -52,7 +52,7 @@ const Checkout = () => {
         navigate(`/order-success/${data._id}`);
       } else {
         await loadRazorpay();
-        const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+        const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_Te0OeStHnJXmrQ";
         if (!razorpayKey || !data.razorpayOrder) {
           throw new Error("Razorpay is not configured. Please try again.");
         }

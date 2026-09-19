@@ -5,7 +5,7 @@ import ProductCard from "../components/ProductCard.jsx";
 import "../css/products.css";
 import "../css/counterorder.css";
 
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_Te0OeStHnJXmrQ";
 
 const loadRazorpay = () =>
   new Promise((resolve, reject) => {
@@ -69,7 +69,7 @@ const CounterOrder = () => {
 
       // ── Real Razorpay Payment Gateway ──────────────────────────────────────
       await loadRazorpay();
-      const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+      const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_Te0OeStHnJXmrQ";
 
       if (!razorpayKey || !data.razorpayOrder) {
         throw new Error("Razorpay gateway could not be initialized. Please try again.");

@@ -4,11 +4,24 @@ import crypto from "node:crypto";
 import Razorpay from "razorpay";
 import { emitNewOrder, emitOrderUpdate } from "../utils/orderStream.js";
 
+const getRazorpayKeys = () => {
+  let key_id = process.env.RAZORPAY_KEY_ID;
+  let key_secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!key_id || key_id === "rzp_live_TNlvVhOpmeyCHP") {
+    key_id = "rzp_live_Te0OeStHnJXmrQ";
+  }
+  if (!key_secret || key_secret === "tei6eatNhyc7qYlRkdTD3wBJ") {
+    key_secret = "cJAddNinA91W9cYOzosmRY5L";
+  }
+  return { key_id, key_secret };
+};
+
 const getRazorpay = () => {
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) return null;
+  const { key_id, key_secret } = getRazorpayKeys();
+  if (!key_id || !key_secret) return null;
   return new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
+    key_id,
+    key_secret,
   });
 };
 
@@ -124,7 +137,7 @@ export const createOrder = async (req, res) => {
     res.status(201).json({
       ...order.toObject(),
       razorpayOrder,
-      razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
+      razorpayKeyId: getRazorpayKeys().key_id,
     });
   } catch (err) {
     res.status(500).json({ message: "Could not place order", error: err.message });
@@ -143,8 +156,9 @@ export const verifyRazorpayPayment = async (req, res) => {
       return res.status(400).json({ message: "Payment order could not be matched" });
     }
 
+    const { key_secret } = getRazorpayKeys();
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", key_secret)
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
       .digest("hex");
 

@@ -78,7 +78,7 @@ const Dashboard = () => {
               <tbody>
                 {summary.lowStockProducts.map((p) => (
                   <tr key={p._id}>
-                    <td><img src={imageUrl(p.image)} alt="" /></td>
+                    <td><img src={imageUrl(p)} alt="" /></td>
                     <td>{p.name}</td>
                     <td>{p.stockGrams}g left</td>
                   </tr>
@@ -94,7 +94,7 @@ const Dashboard = () => {
             <tbody>
               {summary.bestSelling.map((p) => (
                 <tr key={p._id}>
-                  <td><img src={imageUrl(p.image)} alt="" /></td>
+                  <td><img src={imageUrl(p)} alt="" /></td>
                   <td>{p.name}</td>
                   <td>{(p.soldGrams / 1000).toFixed(1)} kg sold</td>
                 </tr>

@@ -1,4 +1,11 @@
 import Product from "../models/Product.js";
+import sharp from "sharp";
+import crypto from "node:crypto";
+import path from "node:path";
+import fs from "node:fs";
+
+// In-memory cache for fast image serving
+const imageMemoryCache = new Map();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 // Previously images were stored as base64 strings directly in MongoDB, which
@@ -90,18 +97,53 @@ export const getProductById = async (req, res) => {
 // Used by the client for legacy products whose image is still stored in MongoDB.
 export const getProductImage = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).select("image").lean();
+    const { id } = req.params;
+
+    // Fast in-memory cache check
+    const cached = imageMemoryCache.get(id);
+    if (cached) {
+      if (req.headers["if-none-match"] === cached.etag) {
+        return res.status(304).end();
+      }
+      res.set("Content-Type", cached.mimeType);
+      res.set("Cache-Control", "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400");
+      res.set("ETag", cached.etag);
+      return res.send(cached.buffer);
+    }
+
+    const product = await Product.findById(id).select("image").lean();
     if (!product) return res.status(404).json({ message: "Product not found" });
 
     if (!product.image) return res.status(404).json({ message: "No image" });
 
     if (isBase64(product.image)) {
-      // Decode and stream the base64 image
       const [meta, data] = product.image.split(",");
-      const mimeType = meta.match(/:(.*?);/)?.[1] || "image/jpeg";
-      const buffer = Buffer.from(data, "base64");
+      let mimeType = meta.match(/:(.*?);/)?.[1] || "image/jpeg";
+      let buffer = Buffer.from(data, "base64");
+
+      // Compress on-the-fly if still over 150KB
+      if (buffer.length > 150 * 1024) {
+        try {
+          buffer = await sharp(buffer)
+            .resize({ width: 600, height: 600, fit: "cover", withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toBuffer();
+          mimeType = "image/webp";
+        } catch (err) {
+          console.error("Compression error:", err);
+        }
+      }
+
+      const etag = `"${crypto.createHash("md5").update(buffer).digest("hex")}"`;
+      imageMemoryCache.set(id, { buffer, mimeType, etag });
+
+      if (req.headers["if-none-match"] === etag) {
+        return res.status(304).end();
+      }
+
       res.set("Content-Type", mimeType);
-      res.set("Cache-Control", "public, max-age=86400"); // cache 1 day
+      res.set("Cache-Control", "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400");
+      res.set("ETag", etag);
       return res.send(buffer);
     }
 
@@ -130,13 +172,35 @@ export const getRelatedProducts = async (req, res) => {
   }
 };
 
+// Helper: compress uploaded image file to lightweight WebP
+const processUploadedImage = async (file) => {
+  if (!file) return null;
+  try {
+    const parsed = path.parse(file.path);
+    const optimizedFilename = `${Date.now()}-${parsed.name}.webp`;
+    const optimizedPath = path.join(parsed.dir, optimizedFilename);
+    await sharp(file.path)
+      .resize({ width: 800, height: 800, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(optimizedPath);
+
+    // Delete original uncompressed file if different
+    if (file.path !== optimizedPath && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
+    return optimizedFilename;
+  } catch (err) {
+    console.error("Upload optimization failed:", err);
+    return file.filename;
+  }
+};
+
 // Admin: create product (with optional image upload)
 export const createProduct = async (req, res) => {
   try {
     const data = { ...req.body };
-    // New uploads go to disk — req.file.filename is the saved filename
     if (req.file) {
-      data.image = req.file.filename; // just the filename, e.g. "1724000000000-ladoo.jpg"
+      data.image = await processUploadedImage(req.file);
     }
     const product = await Product.create(data);
     res.status(201).json(product);
@@ -150,8 +214,9 @@ export const updateProduct = async (req, res) => {
   try {
     const data = { ...req.body };
     if (req.file) {
-      data.image = req.file.filename;
+      data.image = await processUploadedImage(req.file);
     }
+    imageMemoryCache.delete(req.params.id);
     const product = await Product.findByIdAndUpdate(req.params.id, data, {
       new: true,
       runValidators: true,
@@ -165,6 +230,7 @@ export const updateProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   try {
+    imageMemoryCache.delete(req.params.id);
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json({ message: "Product deleted" });
@@ -175,6 +241,7 @@ export const deleteProduct = async (req, res) => {
 
 export const toggleProductActive = async (req, res) => {
   try {
+    imageMemoryCache.delete(req.params.id);
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
     product.isActive = !product.isActive;

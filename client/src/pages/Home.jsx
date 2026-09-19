@@ -44,11 +44,16 @@ const Home = () => {
   return (
     <>
       <section className="hero">
-        <img
-          className="hero-banner-image"
-          src="/hero-banner.png"
-          alt="Chamundeshwari Home Sweets traditional sweets banner"
-        />
+        <picture>
+          <source srcSet="/hero-banner.webp" type="image/webp" />
+          <img
+            className="hero-banner-image"
+            src="/hero-banner.png"
+            alt="Chamundeshwari Home Sweets traditional sweets banner"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </picture>
       </section>
 
       {offers.length > 0 && (

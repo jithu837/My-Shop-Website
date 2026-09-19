@@ -57,7 +57,7 @@ const ProductDetail = () => {
       <div className="container">
         <div className="pd-grid">
           <div className="pd-image">
-            <img src={imageUrl(product.image)} alt={product.name} />
+            <img src={imageUrl(product)} alt={product.name} />
           </div>
 
           <div className="pd-info">

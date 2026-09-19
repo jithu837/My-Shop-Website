@@ -110,7 +110,7 @@ const ProductManage = () => {
             <tbody>
               {products.map((p) => (
                 <tr key={p._id}>
-                  <td><img src={imageUrl(p.image)} alt="" /></td>
+                  <td><img src={imageUrl(p)} alt="" /></td>
                   <td>{p.name}</td>
                   <td>{p.category}</td>
                   <td>₹{p.pricePerKg}</td>

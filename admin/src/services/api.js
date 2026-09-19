@@ -71,7 +71,14 @@ export const imageUrl = (productOrFilename, productId) => {
       ? `${API_BASE}/api/products/${id}/image`
       : `/api/products/${id}/image`;
   }
-  if (!product?.image) return "/placeholder-sweet.svg";
+  if (!product?.image) {
+    if (id) {
+      return API_BASE
+        ? `${API_BASE}/api/products/${id}/image`
+        : `/api/products/${id}/image`;
+    }
+    return "/placeholder-sweet.svg";
+  }
   if (product.image.startsWith("data:image")) return product.image;
   return API_BASE
     ? `${API_BASE}/uploads/${product.image}`

@@ -52,8 +52,10 @@ app.use(
   })
 );
 app.use(compression());
-app.use(express.json());
-app.use("/uploads", express.static(uploadPath));
+app.use("/uploads", express.static(uploadPath, {
+  maxAge: "30d",
+  immutable: true,
+}));
 
 // Health endpoint — must be BEFORE rate limiters so it's never blocked
 app.get("/api/health", (req, res) => res.json({ status: "ok", ts: Date.now() }));

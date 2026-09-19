@@ -132,9 +132,16 @@ const OrdersManage = () => {
                             #{idx + 1}
                           </span>
                         )}
-                        <strong style={{ color: "var(--color-brass-light)", fontSize: "1.05rem", letterSpacing: "0.03em" }}>
-                          TOKEN #{o.orderNumber}
-                        </strong>
+                        <div>
+                          <strong style={{ color: "var(--color-brass-light)", fontSize: "1.05rem", letterSpacing: "0.03em", display: "block" }}>
+                            TOKEN #{o.tokenNumber || o.orderNumber}
+                          </strong>
+                          {o.tokenNumber && (
+                            <small style={{ color: "rgba(251,243,231,0.55)", fontSize: "0.75rem" }}>
+                              {o.orderNumber}
+                            </small>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td>

@@ -427,7 +427,7 @@ const CustomerHistory = () => {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               <span style={{ fontWeight: 700, color: "var(--color-brass-light)", fontSize: "1.05rem" }}>
-                                Token #{ord.orderNumber}
+                                Token #{ord.tokenNumber || ord.orderNumber}
                               </span>
                               <span className={`badge ${ord.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`} style={{ fontSize: "0.75rem" }}>
                                 {ord.orderType === "Counter" ? "🔳 Counter" : "🌐 Website"}

@@ -14,6 +14,8 @@ const orderItemSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, required: true, unique: true },
+    // Daily sequential token number (resets to 1 each day)
+    tokenNumber: { type: Number, default: 1 },
 
     // "Delivery" = normal website order needing an address.
     // "Counter" = customer scanned the shop's QR code, ordered in-store, no delivery needed.

@@ -40,7 +40,7 @@ const OrderSuccess = () => {
         <p className="eyebrow">Payment received</p>
         <h1>Amount paid successfully</h1>
         <p>Show this token at the shop counter.</p>
-        <div className="payment-token">#{order.orderNumber}</div>
+        <div className="payment-token">#{order.tokenNumber || order.orderNumber}</div>
         <Link to="/products" className="btn btn-primary">Continue Shopping</Link>
       </section>
     );
@@ -53,7 +53,7 @@ const OrderSuccess = () => {
           <span className="invoice-success-icon">✓</span>
           <div>
             <h2>Order placed successfully!</h2>
-            <p>Your order token is <strong>#{order.orderNumber}</strong></p>
+            <p>Your daily order token is <strong>#{order.tokenNumber || order.orderNumber}</strong></p>
             <p className={`payment-state ${order.paymentStatus === "Paid" ? "is-paid" : ""}`}>
               {order.paymentStatus === "Paid" ? "✓ Payment received" : "Payment pending"}
             </p>
@@ -67,9 +67,10 @@ const OrderSuccess = () => {
               <p>Invoice / Order Receipt</p>
             </div>
             <div className="invoice-header-right">
-              <div><strong>Order #</strong> {order.orderNumber}</div>
-              <div><strong>Date</strong> {new Date(order.createdAt).toLocaleString("en-IN")}</div>
-              <div><strong>Payment</strong> {order.paymentMethod} · {order.paymentStatus}</div>
+              <div><strong>Token #</strong> #{order.tokenNumber || order.orderNumber}</div>
+              <div><strong>Order Ref:</strong> {order.orderNumber}</div>
+              <div><strong>Date:</strong> {new Date(order.createdAt).toLocaleString("en-IN")}</div>
+              <div><strong>Payment:</strong> {order.paymentMethod} · {order.paymentStatus}</div>
             </div>
           </div>
 

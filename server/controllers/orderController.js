@@ -75,18 +75,47 @@ export const createOrder = async (req, res) => {
 
     const total = subtotal - discount;
 
-    // Generate sequential order number starting from 1
-    let count = await Order.countDocuments();
-    let nextId = count + 1;
-    while(true) {
-        const existing = await Order.findOne({ orderNumber: nextId.toString() });
-        if (!existing) break;
-        nextId++;
+    // Calculate today's start in IST (midnight 00:00 IST) for daily token resets
+    const now = new Date();
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffsetMs);
+    const year = istNow.getUTCFullYear();
+    const month = istNow.getUTCMonth();
+    const date = istNow.getUTCDate();
+    const startOfDayUTC = new Date(Date.UTC(year, month, date) - istOffsetMs);
+
+    const yy = String(year).slice(-2);
+    const mm = String(month + 1).padStart(2, "0");
+    const dd = String(date).padStart(2, "0");
+    const dateCode = `${yy}${mm}${dd}`;
+
+    // Count today's orders to start tokens from 1 each day
+    const todayOrdersCount = await Order.countDocuments({
+      createdAt: { $gte: startOfDayUTC },
+    });
+
+    let dailyToken = todayOrdersCount + 1;
+    while (true) {
+      const existing = await Order.findOne({
+        createdAt: { $gte: startOfDayUTC },
+        tokenNumber: dailyToken,
+      });
+      if (!existing) break;
+      dailyToken++;
     }
-    const orderNumberStr = nextId.toString();
+
+    // Globally unique orderNumber format: CH-YYMMDD-TOKEN (e.g. CH-260920-1)
+    let orderNumberStr = `CH-${dateCode}-${dailyToken}`;
+    while (true) {
+      const existingNum = await Order.findOne({ orderNumber: orderNumberStr });
+      if (!existingNum) break;
+      dailyToken++;
+      orderNumberStr = `CH-${dateCode}-${dailyToken}`;
+    }
 
     const order = await Order.create({
       orderNumber: orderNumberStr,
+      tokenNumber: dailyToken,
       orderType: type,
       customerName: customerName || "Walk-in Customer",
       customerPhone: customerPhone || "",
@@ -301,6 +330,7 @@ export const getCustomerHistory = async (req, res) => {
       cust.orders.push({
         _id: order._id,
         orderNumber: order.orderNumber,
+        tokenNumber: order.tokenNumber,
         orderType: order.orderType,
         items: order.items,
         total: order.total,

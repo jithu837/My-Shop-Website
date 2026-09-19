@@ -188,9 +188,14 @@ const CounterOrder = () => {
               <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: 1, color: "var(--color-ink-soft)" }}>
                 Your Order Token
               </div>
-              <div style={{ fontSize: "2.4rem", fontWeight: 800, color: "var(--color-maroon-deep)", margin: "4px 0" }}>
-                #{placedOrder.orderNumber}
+              <div style={{ fontSize: "2.8rem", fontWeight: 900, color: "var(--color-maroon-deep)", margin: "4px 0", lineHeight: 1.1 }}>
+                #{placedOrder.tokenNumber || placedOrder.orderNumber}
               </div>
+              {placedOrder.tokenNumber && (
+                <div style={{ fontSize: "0.75rem", color: "var(--color-ink-soft)", marginBottom: "4px" }}>
+                  Ref: {placedOrder.orderNumber}
+                </div>
+              )}
               <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--color-ink-deep)" }}>
                 ₹{placedOrder.total}
               </div>
@@ -199,11 +204,11 @@ const CounterOrder = () => {
             <p className="counter-done-hint" style={{ fontSize: "0.95rem", lineHeight: 1.5, margin: "16px 0 24px 0" }}>
               {paymentConfirmed ? (
                 <>
-                  Please show token <strong>#{placedOrder.orderNumber}</strong> at the shop counter to collect your fresh sweets and hots.
+                  Please show token <strong>#{placedOrder.tokenNumber || placedOrder.orderNumber}</strong> at the shop counter to collect your fresh sweets and hots.
                 </>
               ) : (
                 <>
-                  Please pay <strong>₹{placedOrder.total}</strong> in cash at the counter and show order <strong>#{placedOrder.orderNumber}</strong>.
+                  Please pay <strong>₹{placedOrder.total}</strong> in cash at the counter and show token <strong>#{placedOrder.tokenNumber || placedOrder.orderNumber}</strong>.
                 </>
               )}
             </p>

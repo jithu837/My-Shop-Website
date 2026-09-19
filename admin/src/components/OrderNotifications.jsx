@@ -79,11 +79,12 @@ const speakText = (text) => {
 export const speak = (order) => {
   if (!audioUnlocked) return; // silently ignore if not unlocked yet
   playDing();
+  const token = order.tokenNumber || order.orderNumber;
   const name =
     order.customerName && order.customerName !== "Walk-in Customer"
       ? `from ${order.customerName}.`
       : "";
-  const text = `Token number ${order.orderNumber}. New order ${name} Total rupees ${order.total}. First in line.`;
+  const text = `Token number ${token}. New order ${name} Total rupees ${order.total}. First in line.`;
   setTimeout(() => speakText(text), 700);
 };
 
@@ -167,11 +168,16 @@ const NotifCard = ({ order, queueIndex = 0, queueLength, nextOrder, onDismiss, o
         >
           <div>
             <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(251,243,231,0.7)" }}>
-              Current Token
+              Today's Token (Daily Reset)
             </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--color-brass-light)", letterSpacing: "0.04em", lineHeight: 1.1 }}>
-              TOKEN #{order.orderNumber}
+            <div style={{ fontSize: "2rem", fontWeight: 900, color: "var(--color-brass-light)", letterSpacing: "0.04em", lineHeight: 1.1 }}>
+              TOKEN #{order.tokenNumber || order.orderNumber}
             </div>
+            {order.tokenNumber && (
+              <small style={{ color: "rgba(251,243,231,0.5)", fontSize: "0.75rem", display: "block", marginTop: "2px" }}>
+                Ref: {order.orderNumber}
+              </small>
+            )}
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "0.78rem", color: "rgba(251,243,231,0.65)" }}>Placed</div>
@@ -226,7 +232,7 @@ const NotifCard = ({ order, queueIndex = 0, queueLength, nextOrder, onDismiss, o
           🖨 Print Bill
         </button>
         <button className="notif-btn-confirm" onClick={confirm} style={{ flex: 1.5 }}>
-          {nextOrder ? `✅ Deliver & Call #${nextOrder.orderNumber} →` : "✅ Complete Order"}
+          {nextOrder ? `✅ Deliver & Call #${nextOrder.tokenNumber || nextOrder.orderNumber} →` : "✅ Complete Order"}
         </button>
       </div>
     </div>
@@ -329,7 +335,7 @@ const OrderNotifications = ({ orders, isOpen, onClose, onDismiss, onConfirm }) =
                         </span>
                         <div>
                           <div style={{ fontWeight: 700, color: "var(--color-brass-light)", fontSize: "0.95rem" }}>
-                            TOKEN #{ord.orderNumber}
+                            TOKEN #{ord.tokenNumber || ord.orderNumber}
                           </div>
                           <div style={{ fontSize: "0.82rem", color: "var(--color-cream)", opacity: 0.9 }}>
                             {ord.customerName || "Walk-in"} · {ord.items?.length || 0} item(s)

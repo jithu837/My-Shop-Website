@@ -73,7 +73,10 @@ const buildBillHTML = (order) => {
     <div class="shop-name">${esc(SHOP_NAME)}</div>
     <div class="muted">${esc(SHOP_TAGLINE)}</div>
     <div class="dashed"></div>
-    <div class="meta-row"><span><strong>Bill No:</strong> ${esc(order.orderNumber)}</span><span><strong>${typeLabel}</strong></span></div>
+    <div style="font-size: 22px; font-weight: 900; margin: 6px 0; border: 2px solid #000; padding: 4px; text-align: center; letter-spacing: 1px;">
+      TOKEN #${esc(order.tokenNumber || order.orderNumber)}
+    </div>
+    <div class="meta-row"><span><strong>Bill Ref:</strong> ${esc(order.orderNumber)}</span><span><strong>${typeLabel}</strong></span></div>
     <div class="meta-row"><span><strong>Date:</strong></span><span>${new Date(order.createdAt).toLocaleString("en-IN")}</span></div>
     <div class="meta-row"><span><strong>Payment:</strong></span><span>${esc(order.paymentMethod)} · ${esc(order.paymentStatus)}</span></div>
     <div class="dashed"></div>

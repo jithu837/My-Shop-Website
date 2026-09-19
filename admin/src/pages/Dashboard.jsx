@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import api, { imageUrl } from "../services/api.js";
 import useOrderStream from "../hooks/useOrderStream.js";
 import "../css/admin.css";
@@ -46,14 +47,14 @@ const Dashboard = () => {
       <h1>Dashboard</h1>
 
       <div className="admin-stats-grid">
-        <StatCard label="Today's Sales" value={summary.todaySalesCount} />
+        <StatCard label="Today's Sales" value={summary.todaySalesCount} to="/orders" />
         <StatCard label="Today's Collection" value={`₹${summary.todayCollection}`} />
         <StatCard label="Monthly Collection" value={`₹${summary.monthlyCollection}`} />
-        <StatCard label="Total Customers" value={summary.totalCustomers} />
-        <StatCard label="Pending Orders" value={summary.pendingOrders} />
-        <StatCard label="Delivered Orders" value={summary.deliveredOrders} />
-        <StatCard label="Cancelled Orders" value={summary.cancelledOrders} />
-        <StatCard label="Avg. Feedback Rating" value={summary.feedbackCount ? `★ ${summary.avgRating}` : "—"} />
+        <StatCard label="Total Customers" value={summary.totalCustomers} to="/customers" />
+        <StatCard label="Pending Orders" value={summary.pendingOrders} to="/orders" />
+        <StatCard label="Delivered Orders" value={summary.deliveredOrders} to="/orders" />
+        <StatCard label="Cancelled Orders" value={summary.cancelledOrders} to="/orders" />
+        <StatCard label="Avg. Feedback Rating" value={summary.feedbackCount ? `★ ${summary.avgRating}` : "—"} to="/feedback" />
       </div>
 
       <div className="admin-panel">
@@ -107,11 +108,16 @@ const Dashboard = () => {
   );
 };
 
-const StatCard = ({ label, value }) => (
-  <div className="admin-stat-card">
-    <div className="admin-stat-label">{label}</div>
-    <div className="admin-stat-value">{value}</div>
-  </div>
-);
+const StatCard = ({ label, value, to }) => {
+  const content = (
+    <div className="admin-stat-card" style={to ? { cursor: "pointer", transition: "transform 0.15s ease" } : undefined}>
+      <div className="admin-stat-label">
+        {label} {to && <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>→</span>}
+      </div>
+      <div className="admin-stat-value">{value}</div>
+    </div>
+  );
+  return to ? <Link to={to} style={{ textDecoration: "none", color: "inherit" }}>{content}</Link> : content;
+};
 
 export default Dashboard;

@@ -7,6 +7,7 @@ import ProductManage from "./pages/ProductManage.jsx";
 import OrdersManage from "./pages/OrdersManage.jsx";
 import FeedbackView from "./pages/FeedbackView.jsx";
 import CounterQR from "./pages/CounterQR.jsx";
+import CustomerHistory from "./pages/CustomerHistory.jsx";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="products" element={<ProductManage />} />
         <Route path="orders" element={<OrdersManage />} />
+        <Route path="customers" element={<CustomerHistory />} />
         <Route path="feedback" element={<FeedbackView />} />
         <Route path="qr" element={<CounterQR />} />
       </Route>

@@ -12,10 +12,16 @@ const AdminLayout = () => {
   // useCallback keeps the reference stable so useOrderStream never re-subscribes.
   const handleNewOrder = useCallback((order) => {
     if (order.__event === "order-updated") return;
-    // 1. Announce with voice
+    // 1. Announce with voice focusing on Token number
     speak(order);
-    // 2. Add to the visible notification stack
-    setNotifications((prev) => [...prev, order]);
+    // 2. Add to notification queue in strict FIFO order (oldest first, new at end)
+    setNotifications((prev) => {
+      if (prev.some((o) => o._id === order._id || o.orderNumber === order.orderNumber)) {
+        return prev;
+      }
+      const updated = [...prev, order];
+      return updated.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    });
     // 3. Auto-open drawer
     setIsNotifOpen(true);
   }, []);
@@ -37,16 +43,18 @@ const AdminLayout = () => {
 
   useOrderStream(handleNewOrder);
 
-  // Fetch existing "New" orders when the admin panel is first opened/refreshed
+  // Fetch existing "New" orders when the admin panel is first opened/refreshed (FIFO: oldest first)
   useEffect(() => {
-    api.get("/orders", { params: { status: "New" } })
+    api.get("/orders", { params: { status: "New", sort: "asc" } })
       .then((res) => {
         const newOrders = res.data;
         if (newOrders && newOrders.length > 0) {
-          setNotifications(newOrders);
+          // Strict FIFO: earliest placed order is always first
+          const fifoOrders = [...newOrders].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          setNotifications(fifoOrders);
           setIsNotifOpen(true);
-          // Just speak the latest one so it doesn't overlap excessively
-          speak(newOrders[0]);
+          // Announce first token in queue
+          speak(fifoOrders[0]);
         }
       })
       .catch((err) => console.error("Could not fetch initial pending orders:", err));
@@ -79,6 +87,7 @@ const AdminLayout = () => {
           <NavLink to="/" end>📊 Dashboard</NavLink>
           <NavLink to="/products">🍬 Products</NavLink>
           <NavLink to="/orders">📦 Orders</NavLink>
+          <NavLink to="/customers">👥 Customers</NavLink>
           <NavLink to="/qr">🔳 Counter QR</NavLink>
           <NavLink to="/feedback">💬 Feedback</NavLink>
           

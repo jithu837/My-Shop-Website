@@ -216,17 +216,116 @@ export const getOrdersByPhone = async (req, res) => {
   }
 };
 
-// Admin: list all orders, optionally filtered by status
+// Admin: list all orders, optionally filtered by status and sorted (asc for FIFO, desc for LIFO)
 export const getAllOrders = async (req, res) => {
   try {
-    const { status, orderType } = req.query;
+    const { status, orderType, sort } = req.query;
     const filter = {};
     if (status && status !== "All") filter.status = status;
     if (orderType && orderType !== "All") filter.orderType = orderType;
-    const orders = await Order.find(filter).sort({ createdAt: -1 }).lean();
+    const sortOrder = sort === "asc" ? 1 : -1;
+    const orders = await Order.find(filter).sort({ createdAt: sortOrder }).lean();
     res.json(orders);
   } catch (err) {
     res.status(500).json({ message: "Could not load orders", error: err.message });
+  }
+};
+
+// Admin: customer purchase history and statistics
+export const getCustomerHistory = async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 }).lean();
+
+    const customerMap = new Map();
+
+    for (const order of orders) {
+      const rawPhone = (order.customerPhone || "").trim();
+      const rawName = (order.customerName || "Walk-in Customer").trim();
+      // Group by normalized phone number, or by guest name if no phone
+      const key = rawPhone && rawPhone.length >= 7 ? rawPhone : `walkin_${rawName.toLowerCase()}`;
+
+      if (!customerMap.has(key)) {
+        customerMap.set(key, {
+          id: key,
+          customerName: rawName,
+          customerPhone: rawPhone,
+          customerAddress: order.customerAddress || "",
+          customerEmail: order.customerEmail || "",
+          totalOrders: 0,
+          totalSpent: 0,
+          firstOrderAt: order.createdAt,
+          lastOrderAt: order.createdAt,
+          orders: [],
+          itemsMap: {},
+        });
+      }
+
+      const cust = customerMap.get(key);
+      cust.totalOrders += 1;
+      cust.totalSpent += Number(order.total) || 0;
+
+      if (new Date(order.createdAt) > new Date(cust.lastOrderAt)) {
+        cust.lastOrderAt = order.createdAt;
+      }
+      if (new Date(order.createdAt) < new Date(cust.firstOrderAt)) {
+        cust.firstOrderAt = order.createdAt;
+      }
+      if (rawName !== "Walk-in Customer" && (!cust.customerName || cust.customerName === "Walk-in Customer")) {
+        cust.customerName = rawName;
+      }
+      if (order.customerAddress && !cust.customerAddress) {
+        cust.customerAddress = order.customerAddress;
+      }
+      if (order.customerEmail && !cust.customerEmail) {
+        cust.customerEmail = order.customerEmail;
+      }
+
+      // Aggregate items bought
+      if (Array.isArray(order.items)) {
+        for (const it of order.items) {
+          const itemName = it.name || "Item";
+          if (!cust.itemsMap[itemName]) {
+            cust.itemsMap[itemName] = {
+              name: itemName,
+              totalGrams: 0,
+              orderCount: 0,
+              totalAmount: 0,
+            };
+          }
+          cust.itemsMap[itemName].totalGrams += Number(it.grams) || 0;
+          cust.itemsMap[itemName].orderCount += 1;
+          cust.itemsMap[itemName].totalAmount += Number(it.lineTotal) || 0;
+        }
+      }
+
+      cust.orders.push({
+        _id: order._id,
+        orderNumber: order.orderNumber,
+        orderType: order.orderType,
+        items: order.items,
+        total: order.total,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        status: order.status,
+        createdAt: order.createdAt,
+      });
+    }
+
+    const customers = Array.from(customerMap.values()).map((c) => {
+      const itemsList = Object.values(c.itemsMap).sort((a, b) => b.totalGrams - a.totalGrams);
+      delete c.itemsMap;
+      return {
+        ...c,
+        purchasedItems: itemsList,
+      };
+    });
+
+    // Sort by latest order date
+    customers.sort((a, b) => new Date(b.lastOrderAt) - new Date(a.lastOrderAt));
+
+    res.json(customers);
+  } catch (err) {
+    res.status(500).json({ message: "Could not load customer history", error: err.message });
   }
 };
 

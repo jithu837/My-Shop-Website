@@ -11,12 +11,34 @@ const ProductCard = ({ product }) => {
 
   const effectivePrice = product.pricePerKg * (1 - (product.offerPercent || 0) / 100);
   const priceForGrams = Math.round((effectivePrice * grams) / 1000);
-  const outOfStock = product.stockGrams <= 0;
+  const isAvailable = product.isAvailable !== false && product.stockGrams > 0 && product.inStock !== false && product.isActive !== false;
+  const isOutOfStock = !isAvailable;
+
+  const handleDisabledClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   return (
-    <div className="product-card">
-      {product.offerPercent > 0 && <span className="product-card-offer">{product.offerPercent}% OFF</span>}
-      <Link to={`/products/${product._id}`} className="product-card-image-wrap">
+    <div className={`product-card ${isOutOfStock ? "is-not-available" : ""}`}>
+      {isOutOfStock ? (
+        <>
+          <span className="product-card-badge-unavailable">🚫 Not Available</span>
+          <div className="product-card-overlay-unavailable" onClick={handleDisabledClick} title="This item is currently not available">
+            <span>Not Available</span>
+          </div>
+        </>
+      ) : (
+        product.offerPercent > 0 && <span className="product-card-offer">{product.offerPercent}% OFF</span>
+      )}
+
+      <Link
+        to={isOutOfStock ? "#" : `/products/${product._id}`}
+        className="product-card-image-wrap"
+        onClick={isOutOfStock ? handleDisabledClick : undefined}
+        tabIndex={isOutOfStock ? -1 : 0}
+        aria-disabled={isOutOfStock}
+      >
         <img
           src={imageUrl(product)}
           alt={product.name}
@@ -32,7 +54,12 @@ const ProductCard = ({ product }) => {
         <span className={`badge ${product.category === "Hots" ? "badge-terracotta" : "badge-leaf"}`}>
           {product.category}
         </span>
-        <Link to={`/products/${product._id}`}>
+        <Link
+          to={isOutOfStock ? "#" : `/products/${product._id}`}
+          onClick={isOutOfStock ? handleDisabledClick : undefined}
+          tabIndex={isOutOfStock ? -1 : 0}
+          aria-disabled={isOutOfStock}
+        >
           <h3>{product.name}</h3>
         </Link>
 
@@ -41,8 +68,18 @@ const ProductCard = ({ product }) => {
           <span className="product-card-price-unit"> / {grams}g</span>
         </div>
 
-        {outOfStock ? (
-          <p className="product-card-oos">Out of stock</p>
+        {isOutOfStock ? (
+          <div style={{ marginTop: "4px" }}>
+            <p className="product-card-oos">🚫 Out of stock</p>
+            <button
+              type="button"
+              className="btn btn-outline btn-small product-card-add"
+              disabled
+              style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none", width: "100%", textAlign: "center" }}
+            >
+              Not Available
+            </button>
+          </div>
         ) : (
           <>
             <GramSelector

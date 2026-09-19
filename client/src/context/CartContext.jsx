@@ -54,6 +54,10 @@ export const CartProvider = ({ children }) => {
   }, [items]);
 
   const addToCart = useCallback((product, grams) => {
+    if (product.isAvailable === false || product.stockGrams <= 0 || product.inStock === false) {
+      alert("Sorry, this item is currently not available / out of stock.");
+      return;
+    }
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product._id);
       if (existing) {

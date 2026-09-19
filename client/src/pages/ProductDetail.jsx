@@ -50,13 +50,36 @@ const ProductDetail = () => {
 
   const effectivePrice = product.pricePerKg * (1 - (product.offerPercent || 0) / 100);
   const priceForGrams = Math.round((effectivePrice * grams) / 1000);
-  const outOfStock = product.stockGrams <= 0;
+  const isAvailable = product.isAvailable !== false && product.stockGrams > 0 && product.inStock !== false && product.isActive !== false;
+  const outOfStock = !isAvailable;
 
   return (
     <section className="section">
       <div className="container">
         <div className="pd-grid">
-          <div className="pd-image">
+          <div className="pd-image" style={outOfStock ? { filter: "grayscale(100%) brightness(0.6)", position: "relative" } : { position: "relative" }}>
+            {outOfStock && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  background: "#111827",
+                  color: "#f87171",
+                  border: "1px solid #ef4444",
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  fontSize: "0.85rem",
+                  letterSpacing: "0.05em",
+                  zIndex: 2,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                }}
+              >
+                🚫 Not Available
+              </span>
+            )}
             <img src={imageUrl(product)} alt={product.name} />
           </div>
 
@@ -77,7 +100,20 @@ const ProductDetail = () => {
             <div className="pd-perkg">₹{product.pricePerKg} / kg base price</div>
 
             {outOfStock ? (
-              <p className="product-card-oos">Currently out of stock</p>
+              <div style={{ marginTop: 20, padding: 16, background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 10 }}>
+                <p style={{ margin: 0, color: "#b91c1c", fontWeight: 700, fontSize: "1.05rem" }}>
+                  🚫 Currently Not Available (Out of Stock)
+                </p>
+                <p style={{ margin: "4px 0 14px", color: "var(--color-ink-soft)", fontSize: "0.9rem" }}>
+                  This product is currently unavailable for ordering. Please check back later or choose another delicious sweet.
+                </p>
+                <div className="pd-actions">
+                  <button className="btn btn-outline" disabled style={{ opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" }}>
+                    Not Available
+                  </button>
+                  <Link to="/products" className="btn btn-primary">Browse Available Sweets →</Link>
+                </div>
+              </div>
             ) : (
               <>
                 <GramSelector

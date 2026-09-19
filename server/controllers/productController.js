@@ -60,12 +60,19 @@ export const getProducts = async (req, res) => {
           maxOrderGrams: 1,
           offerPercent: 1,
           isActive: 1,
+          isAvailable: { $ifNull: ["$isAvailable", true] },
           ratingAvg: 1,
           ratingCount: 1,
           soldGrams: 1,
           createdAt: 1,
           updatedAt: 1,
-          inStock: { $and: ["$isActive", { $gt: ["$stockGrams", 0] }] },
+          inStock: {
+            $and: [
+              "$isActive",
+              { $ne: ["$isAvailable", false] },
+              { $gt: ["$stockGrams", 0] },
+            ],
+          },
         },
       },
     ]).option({ maxTimeMS: 8000 });
@@ -87,6 +94,9 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).lean();
     if (!product) return res.status(404).json({ message: "Product not found" });
+    const isAvail = product.isAvailable !== false;
+    product.isAvailable = isAvail;
+    product.inStock = isAvail && product.stockGrams > 0 && product.isActive !== false;
     res.json(product); // full product including base64 image if present
   } catch (err) {
     res.status(500).json({ message: "Could not load product", error: err.message });
@@ -216,6 +226,9 @@ export const updateProduct = async (req, res) => {
     if (req.file) {
       data.image = await processUploadedImage(req.file);
     }
+    if (data.isAvailable !== undefined) {
+      data.isAvailable = data.isAvailable === true || data.isAvailable === "true";
+    }
     imageMemoryCache.delete(req.params.id);
     const product = await Product.findByIdAndUpdate(req.params.id, data, {
       new: true,
@@ -249,5 +262,35 @@ export const toggleProductActive = async (req, res) => {
     res.json(product);
   } catch (err) {
     res.status(500).json({ message: "Could not update product status", error: err.message });
+  }
+};
+
+// Admin: toggle product in-stock / availability handler
+export const toggleProductStock = async (req, res) => {
+  try {
+    imageMemoryCache.delete(req.params.id);
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // If client passes explicit boolean, use it; otherwise invert
+    if (typeof req.body.isAvailable === "boolean") {
+      product.isAvailable = req.body.isAvailable;
+    } else if (req.body.isAvailable === "true" || req.body.isAvailable === "false") {
+      product.isAvailable = req.body.isAvailable === "true";
+    } else {
+      product.isAvailable = product.isAvailable === false ? true : false;
+    }
+
+    // If toggling to In Stock and current stock is 0 or less, replenish with default stock
+    if (product.isAvailable && product.stockGrams <= 0) {
+      product.stockGrams = 5000; // 5kg
+    } else if (!product.isAvailable) {
+      // Keep stockGrams or let isAvailable flag govern out-of-stock
+    }
+
+    await product.save();
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: "Could not update product availability", error: err.message });
   }
 };

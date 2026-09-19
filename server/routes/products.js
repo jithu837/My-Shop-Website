@@ -8,6 +8,7 @@ import {
   updateProduct,
   deleteProduct,
   toggleProductActive,
+  toggleProductStock,
 } from "../controllers/productController.js";
 import upload from "../middleware/upload.js";
 
@@ -24,5 +25,6 @@ router.post("/", upload.single("image"), createProduct);
 router.put("/:id", upload.single("image"), updateProduct);
 router.delete("/:id", deleteProduct);
 router.patch("/:id/toggle", toggleProductActive);
+router.patch("/:id/stock", toggleProductStock);
 
 export default router;

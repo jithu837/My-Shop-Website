@@ -26,6 +26,7 @@ const productSchema = new mongoose.Schema(
 
     offerPercent: { type: Number, default: 0, min: 0, max: 90 },
     isActive: { type: Boolean, default: true },
+    isAvailable: { type: Boolean, default: true },
 
     ratingAvg: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
@@ -36,12 +37,12 @@ const productSchema = new mongoose.Schema(
 );
 
 // Database indexes for fast querying & sorting
-productSchema.index({ isActive: 1, category: 1 });
+productSchema.index({ isActive: 1, isAvailable: 1, category: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ soldGrams: -1 });
 
 productSchema.virtual("inStock").get(function () {
-  return this.stockGrams > 0 && this.isActive;
+  return this.isAvailable !== false && this.stockGrams > 0 && this.isActive;
 });
 
 productSchema.set("toJSON", { virtuals: true });

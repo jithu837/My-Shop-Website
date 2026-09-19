@@ -6,11 +6,11 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://my-shop-website-g1pl.onrender.com"
+    "VITE_API_URL": "https://my-shop-website-z6h7.onrender.com"
   },
   "build": {
     "env": {
-      "VITE_API_URL": "https://my-shop-website-g1pl.onrender.com"
+      "VITE_API_URL": "https://my-shop-website-z6h7.onrender.com"
     }
   }
 }

@@ -7,8 +7,8 @@ import axios from "axios";
 // e.g. https://my-shop-website-xxxx.onrender.com
 const getApiBase = () => {
   const envUrl = import.meta.env.VITE_API_URL || "";
-  if (!envUrl || envUrl.includes("elkf") || envUrl.includes("5pfw")) {
-    return import.meta.env.DEV ? "" : "https://my-shop-website-g1pl.onrender.com";
+  if (!envUrl || envUrl.includes("elkf") || envUrl.includes("5pfw") || envUrl.includes("g1pl")) {
+    return import.meta.env.DEV ? "" : "https://my-shop-website-z6h7.onrender.com";
   }
   return envUrl;
 };

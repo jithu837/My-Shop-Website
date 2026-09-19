@@ -4,7 +4,7 @@ import api from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
 import "../css/checkout.css";
 
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
 
 const loadRazorpay = () => new Promise((resolve, reject) => {
   if (window.Razorpay) return resolve(true);
@@ -52,11 +52,12 @@ const Checkout = () => {
         navigate(`/order-success/${data._id}`);
       } else {
         await loadRazorpay();
-        if (!RAZORPAY_KEY_ID || !data.razorpayOrder) {
-          throw new Error("Razorpay is not configured. Add the public key to client/.env.");
+        const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+        if (!razorpayKey || !data.razorpayOrder) {
+          throw new Error("Razorpay is not configured. Please try again.");
         }
         const razorpay = new window.Razorpay({
-          key: RAZORPAY_KEY_ID,
+          key: razorpayKey,
           amount: data.razorpayOrder.amount,
           currency: data.razorpayOrder.currency,
           name: "Chamundeshwari Home Sweets",

@@ -1,47 +1,40 @@
 import React, { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import api from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import "../css/products.css";
 import "../css/counterorder.css";
 
-// Shop's UPI details — read from env vars (same as Checkout.jsx, always in sync)
-const UPI_ID = import.meta.env.VITE_UPI_ID || "7816096147@naviaxis";
-const UPI_PAYEE_NAME = import.meta.env.VITE_UPI_PAYEE_NAME || "G JITHENDRA KUMAR";
-const SHOP_NOTE = import.meta.env.VITE_SHOP_NAME || "Chamundeshwari Home Sweets";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+
+const loadRazorpay = () =>
+  new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Could not load Razorpay Checkout"));
+    document.body.appendChild(script);
+  });
 
 const CATEGORIES = ["All", "Sweets", "Hots", "Snacks", "Combo"];
 
 // This is the page the shop's counter QR code points to.
-// No delivery address, no name/phone requirement, no order tracking —
-// just browse, add to cart, pay (Cash or UPI), and get an order number
-// to show the counter staff.
+// Customers browse menu, add items to cart, and pay via real Razorpay
+// (UPI, Cards, NetBanking) or choose Cash at Counter.
 const CounterOrder = () => {
   const { items, subtotal, lineTotal, clearCart } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
-  const [step, setStep] = useState("browse"); // browse -> pay -> upi-qr -> done
+  const [step, setStep] = useState("browse"); // 'browse' | 'pay' | 'done'
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentMethod, setPaymentMethod] = useState("Razorpay");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
-  const [upiError, setUpiError] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-
-  useEffect(() => {
-    if (!placedOrder || placedOrder.paymentStatus === "Paid") return undefined;
-    const timer = setInterval(() => {
-      api.get(`/orders/${placedOrder._id}`).then(({ data }) => {
-        if (data.paymentStatus === "Paid") setPaymentConfirmed(true);
-        setPlacedOrder(data);
-      }).catch(() => {});
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [placedOrder?._id, placedOrder?.paymentStatus]);
 
   useEffect(() => {
     setLoading(true);
@@ -51,16 +44,11 @@ const CounterOrder = () => {
       .finally(() => setLoading(false));
   }, [category]);
 
-  const upiLink = placedOrder
-    ? `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_PAYEE_NAME)}&am=${placedOrder.total}&cu=INR&tn=${encodeURIComponent(
-        `${SHOP_NOTE} - ${placedOrder.orderNumber}`
-      )}`
-    : "";
-
   const placeOrder = async () => {
     if (items.length === 0) return;
     setError("");
     setPlacing(true);
+
     try {
       const { data } = await api.post("/orders", {
         orderType: "Counter",
@@ -73,72 +61,158 @@ const CounterOrder = () => {
       if (paymentMethod === "Cash") {
         setPlacedOrder(data);
         clearCart();
+        setPaymentConfirmed(false);
         setStep("done");
-      } else {
-        setPlacedOrder(data);
-        setStep("upi-qr");
+        setPlacing(false);
+        return;
       }
-    } catch (err) {
-      setError(err.response?.data?.message || "Could not place order. Please try again.");
-    } finally {
-      setPlacing(false);
-    }
-  };
 
-  const confirmUpiPayment = async () => {
-    setUpiError("");
-    try {
-      await api.patch(`/orders/${placedOrder._id}/confirm-payment`);
-      clearCart();
-      setStep("done");
+      // ── Real Razorpay Payment Gateway ──────────────────────────────────────
+      await loadRazorpay();
+      const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_TNlvVhOpmeyCHP";
+
+      if (!razorpayKey || !data.razorpayOrder) {
+        throw new Error("Razorpay gateway could not be initialized. Please try again.");
+      }
+
+      const razorpay = new window.Razorpay({
+        key: razorpayKey,
+        amount: data.razorpayOrder.amount,
+        currency: data.razorpayOrder.currency,
+        name: "Chamundeshwari Home Sweets",
+        description: `Counter Order #${data.orderNumber}`,
+        order_id: data.razorpayOrder.id,
+        prefill: {
+          name: customerName || "Walk-in Customer",
+          contact: customerPhone || "",
+        },
+        theme: { color: "#6B1E23" },
+        handler: async (payment) => {
+          try {
+            setPlacing(true);
+            await api.post("/orders/verify-razorpay", {
+              orderId: data._id,
+              razorpayOrderId: payment.razorpay_order_id,
+              razorpayPaymentId: payment.razorpay_payment_id,
+              razorpaySignature: payment.razorpay_signature,
+            });
+            clearCart();
+            setPlacedOrder({ ...data, paymentStatus: "Paid", razorpayPaymentId: payment.razorpay_payment_id });
+            setPaymentConfirmed(true);
+            setStep("done");
+          } catch (verificationError) {
+            setError(
+              verificationError.response?.data?.message ||
+                "Payment verification failed. Please check with the counter staff."
+            );
+          } finally {
+            setPlacing(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setError("Payment was cancelled. You can try again or pay Cash at Counter.");
+            setPlacing(false);
+          },
+        },
+      });
+
+      razorpay.open();
     } catch (err) {
-      setUpiError(err.response?.data?.message || "Could not confirm payment. Please try again.");
+      setError(err.response?.data?.message || err.message || "Could not place order. Please try again.");
+      setPlacing(false);
     }
   };
 
   const startOver = () => {
     setPlacedOrder(null);
+    setPaymentConfirmed(false);
     setCustomerName("");
     setCustomerPhone("");
-    setPaymentMethod("Cash");
+    setPaymentMethod("Razorpay");
     setError("");
     setStep("browse");
   };
 
-  // ---- Step: Done (order confirmed / cash order placed) ----
+  // ── Step: Done (Order Placed / Paid Successfully) ─────────────────────────
   if (step === "done" && placedOrder) {
-    if (paymentConfirmed) {
-      return (
-        <section className="payment-success-screen">
-          <div className="payment-success-check">✓</div>
-          <p className="eyebrow">Payment received</p>
-          <h1>Amount paid successfully</h1>
-          <p>Show this token at the shop counter.</p>
-          <div className="payment-token">#{placedOrder.orderNumber}</div>
-          <button className="btn btn-primary" onClick={startOver}>Place Another Order</button>
-        </section>
-      );
-    }
     return (
       <section className="section counter-page">
         <div className="container counter-done">
-          <div className="card counter-done-card">
-            <span className="eyebrow">Order Placed</span>
-            <h2>#{placedOrder.orderNumber}</h2>
-            <p className="counter-done-total">₹{placedOrder.total}</p>
-
-            {placedOrder.paymentMethod === "Cash" ? (
-              <p className="counter-done-hint">
-                Please pay <strong>₹{placedOrder.total}</strong> in cash at the counter and show this order number.
-              </p>
+          <div className="card counter-done-card" style={{ textAlign: "center", padding: "32px 24px" }}>
+            {paymentConfirmed ? (
+              <div style={{ marginBottom: 20 }}>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    background: "#22C55E",
+                    color: "#FFFFFF",
+                    fontSize: 32,
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 12px auto",
+                    boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+                  }}
+                >
+                  ✓
+                </div>
+                <span className="eyebrow" style={{ color: "#16A34A", fontWeight: 700 }}>
+                  Payment Received via Razorpay
+                </span>
+                <h2 style={{ marginTop: 6, marginBottom: 4 }}>Amount Paid Successfully</h2>
+                <p style={{ color: "var(--color-ink-soft)", margin: "4px 0 0 0" }}>
+                  Your order is confirmed and sent to the counter!
+                </p>
+              </div>
             ) : (
-              <p className="counter-done-hint">
-                Payment recorded. Please show this order number at the counter to collect your order.
-              </p>
+              <div style={{ marginBottom: 20 }}>
+                <span className="eyebrow">Counter Order Placed</span>
+                <h2 style={{ marginTop: 6, marginBottom: 4 }}>Pay Cash at Counter</h2>
+              </div>
             )}
 
-            <div className="counter-done-items">
-              {placedOrder.items.map((i, idx) => (
+            <div
+              style={{
+                background: "rgba(107,30,35,0.06)",
+                border: "2px dashed rgba(107,30,35,0.3)",
+                borderRadius: 12,
+                padding: "16px 20px",
+                margin: "16px auto",
+                maxWidth: 280,
+              }}
+            >
+              <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: 1, color: "var(--color-ink-soft)" }}>
+                Your Order Token
+              </div>
+              <div style={{ fontSize: "2.4rem", fontWeight: 800, color: "var(--color-maroon-deep)", margin: "4px 0" }}>
+                #{placedOrder.orderNumber}
+              </div>
+              <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--color-ink-deep)" }}>
+                ₹{placedOrder.total}
+              </div>
+            </div>
+
+            <p className="counter-done-hint" style={{ fontSize: "0.95rem", lineHeight: 1.5, margin: "16px 0 24px 0" }}>
+              {paymentConfirmed ? (
+                <>
+                  Please show token <strong>#{placedOrder.orderNumber}</strong> at the shop counter to collect your fresh sweets and hots.
+                </>
+              ) : (
+                <>
+                  Please pay <strong>₹{placedOrder.total}</strong> in cash at the counter and show order <strong>#{placedOrder.orderNumber}</strong>.
+                </>
+              )}
+            </p>
+
+            <div className="counter-done-items" style={{ textAlign: "left", marginBottom: 24 }}>
+              <div style={{ fontWeight: 700, fontSize: "0.85rem", textTransform: "uppercase", marginBottom: 8, color: "var(--color-ink-soft)" }}>
+                Order Summary
+              </div>
+              {placedOrder.items?.map((i, idx) => (
                 <div className="counter-done-row" key={idx}>
                   <span>{i.name} ({i.grams}g)</span>
                   <span>₹{i.lineTotal}</span>
@@ -146,7 +220,7 @@ const CounterOrder = () => {
               ))}
             </div>
 
-            <button className="btn btn-primary" onClick={startOver}>
+            <button className="btn btn-primary" onClick={startOver} style={{ width: "100%", padding: "12px 20px" }}>
               Place Another Order
             </button>
           </div>
@@ -155,46 +229,14 @@ const CounterOrder = () => {
     );
   }
 
-  // ---- Step: UPI QR ----
-  if (step === "upi-qr" && placedOrder) {
-    return (
-      <section className="section counter-page">
-        <div className="container checkout-upi">
-          <div className="card checkout-upi-card">
-            <span className="eyebrow">Scan &amp; Pay</span>
-            <h2>₹{placedOrder.total}</h2>
-            <p>Order #{placedOrder.orderNumber}</p>
-
-            <div className="checkout-qr-wrap">
-              <QRCodeSVG value={upiLink} size={220} bgColor="#FFFDF9" fgColor="#2B1B14" />
-            </div>
-
-            <p className="checkout-upi-hint">
-              Scan with Google Pay, PhonePe, Paytm, Navi or any BHIM UPI app. The amount is filled in automatically.
-            </p>
-            <p className="checkout-upi-id">UPI ID: {UPI_ID}</p>
-
-            <button className="btn btn-primary" onClick={confirmUpiPayment}>
-              I've Paid — Confirm Payment
-            </button>
-            {upiError && <p className="checkout-error">{upiError}</p>}
-            <p className="checkout-upi-note">
-              Show your order number at the counter once payment is confirmed.
-            </p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // ---- Step: Pay (mini checkout, no address) ----
+  // ── Step: Pay (Confirm details & choose Razorpay or Cash) ─────────────────
   if (step === "pay") {
     return (
       <section className="section counter-page">
         <div className="container counter-pay">
           <div className="card counter-pay-card">
-            <span className="eyebrow">Your Order</span>
-            <h2>Confirm &amp; Pay</h2>
+            <span className="eyebrow">Your Counter Order</span>
+            <h2>Review &amp; Pay</h2>
 
             <div className="checkout-summary-row-list">
               {items.map((i) => (
@@ -205,37 +247,83 @@ const CounterOrder = () => {
               ))}
             </div>
             <div className="cart-summary-total">
-              <span>Total</span>
+              <span>Total Amount</span>
               <span>₹{subtotal}</span>
             </div>
 
-            <div className="form-group">
-              <label>Your name (optional, helps us call out your order)</label>
-              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Ramesh" />
+            <div className="form-group" style={{ marginTop: 20 }}>
+              <label>Your Name (Optional)</label>
+              <input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="e.g. Ramesh"
+              />
             </div>
             <div className="form-group">
-              <label>Mobile number</label>
-              <input required value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} pattern="[0-9]{10}" title="10 digit phone number" placeholder="10 digit mobile number" />
+              <label>Mobile Number (For order status / receipts)</label>
+              <input
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                pattern="[0-9]{10}"
+                title="10 digit phone number"
+                placeholder="10 digit mobile number"
+              />
             </div>
 
-            <h3>Payment</h3>
+            <h3 style={{ marginTop: 24, marginBottom: 12 }}>Choose Payment Method</h3>
             <div className="checkout-payment-options">
-              <label className={`checkout-payment-option ${paymentMethod === "Cash" ? "is-selected" : ""}`}>
-                <input type="radio" checked={paymentMethod === "Cash"} onChange={() => setPaymentMethod("Cash")} />
-                💵 Cash at Counter
+              <label className={`checkout-payment-option ${paymentMethod === "Razorpay" ? "is-selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="counterPayment"
+                  checked={paymentMethod === "Razorpay"}
+                  onChange={() => setPaymentMethod("Razorpay")}
+                />
+                <div>
+                  <strong style={{ display: "block" }}>⚡ Online Payment (Razorpay Live)</strong>
+                  <span style={{ fontSize: "0.8rem", color: "var(--color-ink-soft)" }}>
+                    UPI (Google Pay, PhonePe, Paytm, Navi), Cards &amp; NetBanking
+                  </span>
+                </div>
               </label>
-              <label className={`checkout-payment-option ${paymentMethod === "UPI" ? "is-selected" : ""}`}>
-                <input type="radio" checked={paymentMethod === "UPI"} onChange={() => setPaymentMethod("UPI")} />
-                📱 UPI (Scan &amp; Pay)
+
+              <label className={`checkout-payment-option ${paymentMethod === "Cash" ? "is-selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="counterPayment"
+                  checked={paymentMethod === "Cash"}
+                  onChange={() => setPaymentMethod("Cash")}
+                />
+                <div>
+                  <strong style={{ display: "block" }}>💵 Cash at Counter</strong>
+                  <span style={{ fontSize: "0.8rem", color: "var(--color-ink-soft)" }}>
+                    Pay with cash directly to the shopkeeper
+                  </span>
+                </div>
               </label>
             </div>
 
-            {error && <p className="checkout-error">{error}</p>}
+            {error && <p className="checkout-error" style={{ marginTop: 16 }}>{error}</p>}
 
-            <button className="btn btn-primary checkout-submit" disabled={placing} onClick={placeOrder}>
-              {placing ? "Placing Order..." : paymentMethod === "UPI" ? "Continue to UPI Payment" : "Place Order"}
+            <button
+              className="btn btn-primary checkout-submit"
+              disabled={placing}
+              onClick={placeOrder}
+              style={{ marginTop: 20, width: "100%", padding: "14px", fontSize: "1rem" }}
+            >
+              {placing
+                ? "Opening Razorpay..."
+                : paymentMethod === "Razorpay"
+                ? `Pay ₹${subtotal} with Razorpay`
+                : `Place Order (Pay ₹${subtotal} Cash)`}
             </button>
-            <button className="btn btn-outline counter-back" onClick={() => setStep("browse")}>
+
+            <button
+              className="btn btn-outline counter-back"
+              onClick={() => setStep("browse")}
+              style={{ marginTop: 10, width: "100%" }}
+            >
               ← Back to Menu
             </button>
           </div>
@@ -244,14 +332,16 @@ const CounterOrder = () => {
     );
   }
 
-  // ---- Step: Browse (default) ----
+  // ── Step: Browse Menu ─────────────────────────────────────────────────────
   return (
     <section className="section counter-page">
       <div className="container">
         <div className="section-heading">
           <span className="eyebrow">Chamundeshwari Home Sweets</span>
           <h2>Order at the Counter</h2>
-          <p className="counter-subtext">Add items, then pay by cash or UPI. No delivery needed — just collect at the counter.</p>
+          <p className="counter-subtext">
+            Add your favorites, review, and pay online instantly with Razorpay or by cash at the counter.
+          </p>
         </div>
 
         <div className="products-toolbar">

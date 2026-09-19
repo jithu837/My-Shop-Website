@@ -6,11 +6,13 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://my-shop-website-z6h7.onrender.com"
+    "VITE_API_URL": "https://my-shop-website-z6h7.onrender.com",
+    "VITE_RAZORPAY_KEY_ID": "rzp_live_TNlvVhOpmeyCHP"
   },
   "build": {
     "env": {
-      "VITE_API_URL": "https://my-shop-website-z6h7.onrender.com"
+      "VITE_API_URL": "https://my-shop-website-z6h7.onrender.com",
+      "VITE_RAZORPAY_KEY_ID": "rzp_live_TNlvVhOpmeyCHP"
     }
   }
 }

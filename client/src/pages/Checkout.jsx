@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
@@ -91,12 +91,10 @@ const Checkout = () => {
   };
 
   // Empty cart guard — moved into an effect so navigation is never called during render
-  // (which triggers React's "cannot update during render" warning).
-  React.useEffect(() => {
+  useEffect(() => {
     if (items.length === 0) navigate("/products");
   }, [items.length, navigate]);
 
-  // Step 1: details + payment method
   return (
     <section className="section">
       <div className="container">

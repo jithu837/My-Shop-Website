@@ -1,8 +1,21 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api, { imageUrl } from "../services/api.js";
+import printBill from "../utils/printBill.js";
 import useOrderStream from "../hooks/useOrderStream.js";
 import "../css/admin.css";
+
+const formatTime = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMinutes = Math.floor((now.getTime() - d.getTime()) / 60000);
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const timeStr = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  const isToday = d.toDateString() === now.toDateString();
+  return isToday ? `Today, ${timeStr}` : `${d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}, ${timeStr}`;
+};
 
 const Dashboard = () => {
   const [summary, setSummary] = useState(null);
@@ -41,6 +54,7 @@ const Dashboard = () => {
   if (!summary) return <div className="spinner" />;
 
   const maxRevenue = Math.max(...graph.map((g) => g.total), 1);
+  const recentOrders = summary.recentCustomerHistory || [];
 
   return (
     <div>
@@ -57,7 +71,133 @@ const Dashboard = () => {
         <StatCard label="Avg. Feedback Rating" value={summary.feedbackCount ? `★ ${summary.avgRating}` : "—"} to="/feedback" />
       </div>
 
-      <div className="admin-panel">
+      {/* ─── Recent Customer Purchase History ───────────────────────────── */}
+      <div className="admin-panel" style={{ marginTop: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>🕒</span>
+              <span>Recent Customer History</span>
+              <span className="badge badge-brass" style={{ fontSize: "0.8rem", padding: "2px 8px" }}>
+                {recentOrders.length} Latest Orders
+              </span>
+            </h3>
+            <p style={{ margin: "4px 0 0 0", color: "var(--color-cream)", opacity: 0.75, fontSize: "0.88rem" }}>
+              Latest customer purchases, sweets ordered, token numbers and quick receipt printing.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Link to="/orders" className="btn btn-outline btn-small">
+              View All Orders →
+            </Link>
+            <Link to="/customers" className="btn btn-primary btn-small">
+              👥 Customer Directory →
+            </Link>
+          </div>
+        </div>
+
+        {recentOrders.length === 0 ? (
+          <p className="empty-state">No recent customer orders yet.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Token &amp; Type</th>
+                  <th>Customer</th>
+                  <th>Sweets / Items Ordered</th>
+                  <th>Amount</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.map((ord) => (
+                  <tr key={ord._id}>
+                    <td>
+                      <div>
+                        <strong style={{ color: "var(--color-brass-light)", fontSize: "1rem", display: "block" }}>
+                          TOKEN #{ord.tokenNumber || ord.orderNumber}
+                        </strong>
+                        <span className={`badge ${ord.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`} style={{ fontSize: "0.72rem", padding: "2px 6px" }}>
+                          {ord.orderType === "Counter" ? "🔳 Counter" : "🌐 Website"}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+                        {ord.customerName || "Walk-in Customer"}
+                      </div>
+                      {ord.customerPhone ? (
+                        <small style={{ color: "var(--color-brass-light)", fontSize: "0.82rem" }}>
+                          📞 {ord.customerPhone}
+                        </small>
+                      ) : (
+                        <small style={{ opacity: 0.6, fontSize: "0.8rem" }}>Walk-in</small>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxWidth: "340px" }}>
+                        {ord.items?.map((item, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              background: "rgba(0, 0, 0, 0.3)",
+                              border: "1px solid rgba(251, 243, 231, 0.12)",
+                              borderRadius: "4px",
+                              padding: "3px 7px",
+                              fontSize: "0.82rem",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item.name} ({item.grams >= 1000 ? `${item.grams / 1000}kg` : `${item.grams}g`})
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: 700, color: "var(--color-brass-light)", fontSize: "1rem" }}>
+                      ₹{ord.total}
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${ord.paymentStatus === "Paid" ? "badge-leaf" : "badge-danger"}`}
+                        style={{ fontSize: "0.75rem", padding: "3px 7px" }}
+                      >
+                        {ord.paymentStatus === "Paid" ? "✓ Paid" : "Pending"}
+                      </span>
+                      <small style={{ display: "block", marginTop: "2px", opacity: 0.7, fontSize: "0.75rem" }}>
+                        {ord.paymentMethod}
+                      </small>
+                    </td>
+                    <td>
+                      <span className="badge" style={{ background: "rgba(251, 243, 231, 0.15)", fontSize: "0.75rem", padding: "3px 7px" }}>
+                        {ord.status}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: "0.85rem", whiteSpace: "nowrap", opacity: 0.85 }}>
+                      {formatTime(ord.createdAt)}
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-brass btn-small"
+                        style={{ padding: "4px 8px", fontSize: "0.78rem" }}
+                        onClick={() => printBill(ord)}
+                        title="Print 80mm Receipt"
+                      >
+                        🖨 Bill
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="admin-panel" style={{ marginTop: "24px" }}>
         <h3>Revenue — Last 7 Days</h3>
         <div className="revenue-graph">
           {graph.map((g) => (

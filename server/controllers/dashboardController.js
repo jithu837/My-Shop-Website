@@ -27,19 +27,32 @@ export const getDashboardSummary = async (req, res) => {
     const today = startOfToday();
     const monthStart = startOfMonth();
 
-    const [todayOrders, monthOrders, pending, delivered, cancelled, phoneDocs, products, feedbackDocs] =
-      await Promise.all([
-        Order.find({ createdAt: { $gte: today } }).lean(),
-        Order.find({ createdAt: { $gte: monthStart } }).lean(),
-        Order.countDocuments({ status: { $in: ["New", "Accepted", "Packed", "Dispatched"] } }),
-        Order.countDocuments({ status: "Delivered" }),
-        Order.countDocuments({ status: "Cancelled" }),
-        Order.find().select("customerPhone").lean(),
-        Product.find()
-          .select("name category pricePerKg stockGrams lowStockThresholdGrams soldGrams isActive")
-          .lean(),
-        Feedback.find().lean(),
-      ]);
+    const [
+      todayOrders,
+      monthOrders,
+      pending,
+      delivered,
+      cancelled,
+      phoneDocs,
+      products,
+      feedbackDocs,
+      recentOrders,
+    ] = await Promise.all([
+      Order.find({ createdAt: { $gte: today } }).lean(),
+      Order.find({ createdAt: { $gte: monthStart } }).lean(),
+      Order.countDocuments({ status: { $in: ["New", "Accepted", "Packed", "Dispatched"] } }),
+      Order.countDocuments({ status: "Delivered" }),
+      Order.countDocuments({ status: "Cancelled" }),
+      Order.find().select("customerPhone").lean(),
+      Product.find()
+        .select("name category pricePerKg stockGrams lowStockThresholdGrams soldGrams isActive")
+        .lean(),
+      Feedback.find().lean(),
+      Order.find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
 
     const todaySales = todayOrders.filter((o) => o.status !== "Cancelled").length;
     const todayCollection = todayOrders
@@ -77,6 +90,7 @@ export const getDashboardSummary = async (req, res) => {
       leastSelling,
       feedbackCount: feedbackDocs.length,
       avgRating,
+      recentCustomerHistory: recentOrders,
     });
   } catch (err) {
     res.status(500).json({ message: "Could not load dashboard", error: err.message });

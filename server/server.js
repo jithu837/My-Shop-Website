@@ -7,7 +7,6 @@ import fs from "fs";
 import os from "node:os";
 import path from "path";
 import connectDB from "./config/db.js";
-import { ensureAdminExists } from "./controllers/authController.js";
 import { generalLimiter } from "./middleware/rateLimiters.js";
 import { emitNewOrder, emitOrderUpdate } from "./utils/orderStream.js";
 
@@ -121,8 +120,6 @@ if (cluster.isPrimary && workerCount > 1) {
   // the container isn't killed. Mongoose will buffer incoming requests until connected.
   connectDB()
     .then(async () => {
-      await ensureAdminExists();
-      
       try {
         const { default: Product } = await import("./models/Product.js");
         await Product.find({ isActive: true }).select("_id name").lean().limit(1);

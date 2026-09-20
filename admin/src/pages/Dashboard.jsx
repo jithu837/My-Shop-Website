@@ -82,15 +82,15 @@ const Dashboard = () => {
                 {recentOrders.length} Latest Orders
               </span>
             </h3>
-            <p style={{ margin: "4px 0 0 0", color: "var(--color-cream)", opacity: 0.75, fontSize: "0.88rem" }}>
+            <p style={{ margin: "4px 0 0 0", color: "var(--color-ink-soft)", fontSize: "0.88rem", fontWeight: 500 }}>
               Latest customer purchases, sweets ordered, token numbers and quick receipt printing.
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
-            <Link to="/orders" className="btn btn-outline btn-small">
+            <Link to="/orders" className="btn btn-outline btn-small" style={{ fontWeight: 700 }}>
               View All Orders →
             </Link>
-            <Link to="/customers" className="btn btn-primary btn-small">
+            <Link to="/customers" className="btn btn-primary btn-small" style={{ fontWeight: 700 }}>
               👥 Customer Directory →
             </Link>
           </div>
@@ -118,24 +118,24 @@ const Dashboard = () => {
                   <tr key={ord._id}>
                     <td>
                       <div>
-                        <strong style={{ color: "var(--color-brass-light)", fontSize: "1rem", display: "block" }}>
+                        <strong style={{ color: "var(--color-maroon)", fontSize: "1rem", fontWeight: 800, display: "block" }}>
                           TOKEN #{ord.tokenNumber || ord.orderNumber}
                         </strong>
-                        <span className={`badge ${ord.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`} style={{ fontSize: "0.72rem", padding: "2px 6px" }}>
+                        <span className={`badge ${ord.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`} style={{ fontSize: "0.72rem", padding: "2px 6px", fontWeight: 700 }}>
                           {ord.orderType === "Counter" ? "🔳 Counter" : "🌐 Website"}
                         </span>
                       </div>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+                      <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#1F140E" }}>
                         {ord.customerName || "Walk-in Customer"}
                       </div>
                       {ord.customerPhone ? (
-                        <small style={{ color: "var(--color-brass-light)", fontSize: "0.82rem" }}>
+                        <small style={{ color: "var(--color-maroon)", fontSize: "0.82rem", fontWeight: 700 }}>
                           📞 {ord.customerPhone}
                         </small>
                       ) : (
-                        <small style={{ opacity: 0.6, fontSize: "0.8rem" }}>Walk-in</small>
+                        <small style={{ color: "var(--color-ink-soft)", fontSize: "0.8rem", fontWeight: 600 }}>Walk-in</small>
                       )}
                     </td>
                     <td>
@@ -144,11 +144,13 @@ const Dashboard = () => {
                           <span
                             key={idx}
                             style={{
-                              background: "rgba(0, 0, 0, 0.3)",
-                              border: "1px solid rgba(251, 243, 231, 0.12)",
+                              background: "#F5EFEB",
+                              border: "1px solid rgba(107, 30, 35, 0.16)",
                               borderRadius: "4px",
-                              padding: "3px 7px",
+                              padding: "3px 8px",
                               fontSize: "0.82rem",
+                              color: "#1F140E",
+                              fontWeight: 700,
                               whiteSpace: "nowrap",
                             }}
                           >
@@ -157,26 +159,26 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </td>
-                    <td style={{ fontWeight: 700, color: "var(--color-brass-light)", fontSize: "1rem" }}>
+                    <td style={{ fontWeight: 800, color: "var(--color-maroon)", fontSize: "1.05rem" }}>
                       ₹{ord.total}
                     </td>
                     <td>
                       <span
                         className={`badge ${ord.paymentStatus === "Paid" ? "badge-leaf" : "badge-danger"}`}
-                        style={{ fontSize: "0.75rem", padding: "3px 7px" }}
+                        style={{ fontSize: "0.75rem", padding: "3px 7px", fontWeight: 700 }}
                       >
                         {ord.paymentStatus === "Paid" ? "✓ Paid" : "Pending"}
                       </span>
-                      <small style={{ display: "block", marginTop: "2px", opacity: 0.7, fontSize: "0.75rem" }}>
+                      <small style={{ display: "block", marginTop: "2px", color: "var(--color-ink-soft)", fontSize: "0.75rem", fontWeight: 600 }}>
                         {ord.paymentMethod}
                       </small>
                     </td>
                     <td>
-                      <span className="badge" style={{ background: "rgba(251, 243, 231, 0.15)", fontSize: "0.75rem", padding: "3px 7px" }}>
+                      <span className="badge" style={{ background: "#E2E8F0", color: "#1E293B", fontSize: "0.75rem", padding: "3px 7px", fontWeight: 700 }}>
                         {ord.status}
                       </span>
                     </td>
-                    <td style={{ fontSize: "0.85rem", whiteSpace: "nowrap", opacity: 0.85 }}>
+                    <td style={{ fontSize: "0.85rem", whiteSpace: "nowrap", color: "var(--color-ink)", fontWeight: 600 }}>
                       {formatTime(ord.createdAt)}
                     </td>
                     <td>

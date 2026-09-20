@@ -74,8 +74,8 @@
 .admin-sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(251,243,231,0.12); }
 .admin-user { font-family: var(--font-utility); font-size: 0.85rem; margin-bottom: 10px; }
 
-.admin-main { flex: 1; padding: 32px; max-width: 100%; overflow-x: auto; }
-.admin-main h1 { margin-bottom: 24px; }
+.admin-main { flex: 1; padding: 32px; max-width: 100%; overflow-x: auto; color: var(--color-ink); }
+.admin-main h1 { margin-bottom: 24px; color: var(--color-maroon-deep); }
 
 /* ---- Cards / Stats ---- */
 .admin-stats-grid {

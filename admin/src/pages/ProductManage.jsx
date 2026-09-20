@@ -131,8 +131,8 @@ const ProductManage = () => {
     <div>
       <div className="admin-toolbar">
         <div>
-          <h1 style={{ marginBottom: 4 }}>Products ({products.length})</h1>
-          <p style={{ margin: 0, color: "var(--color-cream)", opacity: 0.8, fontSize: "0.95rem" }}>
+          <h1 style={{ marginBottom: 4, color: "var(--color-maroon-deep)" }}>Products ({products.length})</h1>
+          <p style={{ margin: 0, color: "var(--color-ink-soft)", fontSize: "0.95rem", fontWeight: 500 }}>
             Manage stock availability. Toggle items to <strong>In Stock</strong> or <strong>Not Available</strong>.
           </p>
         </div>
@@ -210,7 +210,7 @@ const ProductManage = () => {
                           <span>{inStock ? "🟢" : "🔴"}</span>
                           {inStock ? "In Stock" : "Not Available"}
                         </button>
-                        <small style={{ color: "rgba(251,243,231,0.7)", fontSize: "0.8rem" }}>
+                        <small style={{ color: "var(--color-ink-soft)", fontSize: "0.82rem", fontWeight: 600 }}>
                           Qty: {p.stockGrams}g
                         </small>
                       </div>

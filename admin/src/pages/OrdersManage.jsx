@@ -72,8 +72,8 @@ const OrdersManage = () => {
     <div>
       <div className="admin-toolbar">
         <div>
-          <h1 style={{ marginBottom: 4 }}>📦 Order Management</h1>
-          <p style={{ margin: 0, color: "var(--color-cream)", opacity: 0.8, fontSize: "0.95rem" }}>
+          <h1 style={{ marginBottom: 4, color: "var(--color-maroon-deep)" }}>📦 Order Management</h1>
+          <p style={{ margin: 0, color: "var(--color-ink-soft)", fontSize: "0.95rem", fontWeight: 500 }}>
             {sortOrder === "asc" ? "⚡ First-In, First-Out (FIFO) queue order" : "🕒 Newest-first order list"}
           </p>
         </div>
@@ -133,11 +133,11 @@ const OrdersManage = () => {
                           </span>
                         )}
                         <div>
-                          <strong style={{ color: "var(--color-brass-light)", fontSize: "1.05rem", letterSpacing: "0.03em", display: "block" }}>
+                          <strong style={{ color: "var(--color-maroon)", fontSize: "1.05rem", fontWeight: 800, letterSpacing: "0.02em", display: "block" }}>
                             TOKEN #{o.tokenNumber || o.orderNumber}
                           </strong>
                           {o.tokenNumber && (
-                            <small style={{ color: "rgba(251,243,231,0.55)", fontSize: "0.75rem" }}>
+                            <small style={{ color: "var(--color-ink-soft)", fontSize: "0.75rem", fontWeight: 600 }}>
                               {o.orderNumber}
                             </small>
                           )}
@@ -145,18 +145,18 @@ const OrdersManage = () => {
                       </div>
                     </td>
                     <td>
-                      <span className={`badge ${o.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`}>
+                      <span className={`badge ${o.orderType === "Counter" ? "badge-brass" : "badge-leaf"}`} style={{ fontWeight: 700 }}>
                         {o.orderType === "Counter" ? "🔳 Counter" : "🌐 Website"}
                       </span>
                     </td>
                     <td>
-                      <strong>{o.customerName || "Walk-in"}</strong>
-                      {o.customerPhone && <><br /><small style={{ color: "var(--color-brass-light)" }}>📞 {o.customerPhone}</small></>}
+                      <strong style={{ color: "#1F140E" }}>{o.customerName || "Walk-in"}</strong>
+                      {o.customerPhone && <><br /><small style={{ color: "var(--color-maroon)", fontWeight: 700 }}>📞 {o.customerPhone}</small></>}
                     </td>
-                    <td>{o.items.length} item(s)</td>
-                    <td style={{ fontWeight: 700, color: "var(--color-brass-light)" }}>₹{o.total}</td>
+                    <td style={{ color: "var(--color-ink)", fontWeight: 600 }}>{o.items.length} item(s)</td>
+                    <td style={{ fontWeight: 800, color: "var(--color-maroon)", fontSize: "1.05rem" }}>₹{o.total}</td>
                     <td>
-                      <div style={{ fontSize: "0.85rem", marginBottom: "4px" }}>{o.paymentMethod}</div>
+                      <div style={{ fontSize: "0.85rem", marginBottom: "4px", fontWeight: 600, color: "var(--color-ink)" }}>{o.paymentMethod}</div>
                       <select className="status-select" value={o.paymentStatus} onChange={(e) => updatePayment(o._id, e.target.value)}>
                         <option>Pending</option><option>Paid</option><option>Failed</option>
                       </select>
@@ -166,10 +166,10 @@ const OrdersManage = () => {
                         {STATUSES.filter((s) => s !== "All").map((s) => <option key={s}>{s}</option>)}
                       </select>
                     </td>
-                    <td style={{ fontSize: "0.85rem" }}>
+                    <td style={{ fontSize: "0.85rem", color: "var(--color-ink)", fontWeight: 600 }}>
                       {new Date(o.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                       <br />
-                      <small style={{ opacity: 0.7 }}>
+                      <small style={{ color: "var(--color-ink-soft)", fontWeight: 500 }}>
                         {new Date(o.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
                       </small>
                     </td>

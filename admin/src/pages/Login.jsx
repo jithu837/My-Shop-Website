@@ -4,7 +4,7 @@ import "../css/login.css";
 
 const Login = () => {
   const { login } = useAuth();
-  const [phone, setPhone] = useState("7816096147");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -14,7 +14,8 @@ const Login = () => {
     e.preventDefault();
     setError("");
 
-    if (!phone.trim()) {
+    const cleanInputPhone = phone.replace(/[^\d]/g, "");
+    if (!cleanInputPhone) {
       setError("Please enter the owner mobile number.");
       return;
     }
@@ -26,7 +27,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await login(phone, password);
+      await login(cleanInputPhone, password.trim());
     } catch (err) {
       const msg =
         err.response?.data?.message ||
@@ -71,7 +72,7 @@ const Login = () => {
                 className="login-input with-prefix"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="7816096147"
+                placeholder="Enter mobile number"
                 maxLength={10}
                 required
                 autoComplete="tel"
@@ -123,11 +124,6 @@ const Login = () => {
             )}
           </button>
         </form>
-
-        <div className="login-footer-badge">
-          <span>🛡️</span>
-          <span>Secured with JWT Session Verification</span>
-        </div>
       </div>
     </div>
   );

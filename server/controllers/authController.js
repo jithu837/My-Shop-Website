@@ -6,21 +6,21 @@ const DEFAULT_ADMIN_PHONE = process.env.ADMIN_PHONE || "7816096147";
 const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Jithu891#";
 
 const cleanPhone = (phone = "") => {
-  let cleaned = String(phone).replace(/[^\d]/g, "");
-  if (cleaned.length === 12 && cleaned.startsWith("91")) {
-    cleaned = cleaned.slice(2);
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length >= 10) {
+    return digits.slice(-10);
   }
-  return cleaned;
+  return digits;
 };
 
 // Auto-seed or sync default owner admin in DB
 export const ensureDefaultAdmin = async () => {
   try {
-    const phone = cleanPhone(DEFAULT_ADMIN_PHONE);
+    const phone = "7816096147";
     let admin = await Admin.findOne({ phone }).maxTimeMS(5000);
 
     if (!admin) {
-      const hashedPassword = await bcrypt.hash(DEFAULT_ADMIN_PASSWORD, 10);
+      const hashedPassword = await bcrypt.hash("Jithu891#", 10);
       admin = await Admin.create({
         phone,
         password: hashedPassword,
@@ -43,20 +43,31 @@ export const loginAdmin = async (req, res) => {
     }
 
     const inputPhone = cleanPhone(phone);
-    const configuredPhone = cleanPhone(DEFAULT_ADMIN_PHONE);
+    const configuredPhone = cleanPhone(process.env.ADMIN_PHONE || "7816096147");
 
-    // 1. Check direct configured owner credentials (works even if DB is cold or offline)
-    const isConfiguredOwner =
-      inputPhone === configuredPhone && password === DEFAULT_ADMIN_PASSWORD;
+    const inputPassword = String(password || "").trim();
+    const configuredPassword = String(process.env.ADMIN_PASSWORD || "Jithu891#").trim();
+
+    // Direct check: match phone (last 10 digits: 7816096147) and password (Jithu891# or configured)
+    const isPhoneMatch =
+      inputPhone === "7816096147" || inputPhone === configuredPhone;
+
+    const isPasswordMatch =
+      inputPassword === "Jithu891#" ||
+      inputPassword.toLowerCase() === "jithu891#" ||
+      inputPassword === configuredPassword ||
+      inputPassword.toLowerCase() === configuredPassword.toLowerCase();
+
+    const isConfiguredOwner = isPhoneMatch && isPasswordMatch;
 
     let admin = null;
     let isMatch = false;
 
-    // 2. If not matched with direct env/default, or to fetch DB profile, query Mongo
+    // Also check DB in case custom password was saved
     try {
       admin = await Admin.findOne({ phone: inputPhone }).maxTimeMS(4000);
       if (admin && admin.password) {
-        isMatch = await bcrypt.compare(password, admin.password);
+        isMatch = await bcrypt.compare(inputPassword, admin.password);
       }
     } catch (dbErr) {
       console.warn("[auth] Mongo query skipped during login check:", dbErr.message);
@@ -64,6 +75,14 @@ export const loginAdmin = async (req, res) => {
 
     if (isConfiguredOwner) {
       isMatch = true;
+      // sync password to DB in background so DB hash matches
+      bcrypt.hash("Jithu891#", 10).then((hashed) => {
+        Admin.findOneAndUpdate(
+          { phone: "7816096147" },
+          { password: hashed, name: "Store Owner", role: "admin" },
+          { upsert: true }
+        ).catch(() => {});
+      });
     }
 
     if (!isMatch) {

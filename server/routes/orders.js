@@ -11,19 +11,20 @@ import {
 } from "../controllers/orderController.js";
 import { orderLimiter } from "../middleware/rateLimiters.js";
 import { addClient, removeClient } from "../utils/orderStream.js";
+import { protectAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Admin (login removed — direct access)
+// Admin (protected with JWT)
 // IMPORTANT: GET "/" and GET "/customers" must come BEFORE GET "/:id" or Express will never reach it.
-router.get("/", getAllOrders);
-router.get("/customers", getCustomerHistory);
+router.get("/", protectAdmin, getAllOrders);
+router.get("/customers", protectAdmin, getCustomerHistory);
 router.post("/verify-razorpay", verifyRazorpayPayment);
-router.patch("/:id/status", updateOrderStatus);
+router.patch("/:id/status", protectAdmin, updateOrderStatus);
 
 // ── SSE stream — admin panels subscribe here for real-time order alerts ──────
 // Must be registered BEFORE "/:id" so "stream" isn't treated as a MongoDB ID.
-router.get("/stream", (req, res) => {
+router.get("/stream", protectAdmin, (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");

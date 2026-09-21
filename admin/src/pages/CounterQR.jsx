@@ -42,7 +42,7 @@ const CounterQR = () => {
     !rawSiteUrl || rawSiteUrl.includes("your-site-name")
       ? "https://my-shop-website-5bzd.vercel.app"
       : rawSiteUrl;
-  const siteUrl = `${baseSiteUrl.replace(/\/$/, "")}/order`;
+  const siteUrl = `${baseSiteUrl.replace(/\/$/, "")}/order?qr=1`;
 
   // ── QR Download Handler ──────────────────────────────────────────────────
   const downloadQR = () => {

@@ -14,6 +14,8 @@ import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
 import feedbackRoutes from "./routes/feedback.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import authRoutes from "./routes/auth.js";
+import { ensureDefaultAdmin } from "./controllers/authController.js";
 
 const envCandidates = [
   path.resolve(process.cwd(), ".env"),
@@ -62,6 +64,7 @@ app.use("/uploads", express.static(uploadPath, {
 app.get("/api/health", (req, res) => res.json({ status: "ok", ts: Date.now() }));
 
 // ─── Routes (generalLimiter: 200 req / 15 min per IP on all API routes) ───────
+app.use("/api/auth", generalLimiter, authRoutes);
 app.use("/api/products", generalLimiter, productRoutes);
 app.use("/api/orders", generalLimiter, orderRoutes);
 app.use("/api/feedback", generalLimiter, feedbackRoutes);
@@ -121,6 +124,7 @@ if (cluster.isPrimary && workerCount > 1) {
   connectDB()
     .then(async () => {
       try {
+        await ensureDefaultAdmin();
         const { default: Product } = await import("./models/Product.js");
         await Product.find({ isActive: true }).select("_id name").lean().limit(1);
         console.log("[warm-up] MongoDB product query warmed");

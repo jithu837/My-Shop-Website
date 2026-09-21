@@ -3,9 +3,11 @@ import { NavLink, Outlet } from "react-router-dom";
 import useOrderStream from "../hooks/useOrderStream.js";
 import OrderNotifications, { speak, AudioUnlockBanner } from "../components/OrderNotifications.jsx";
 import api from "../services/api.js";
+import { useAuth } from "../context/AuthContext.jsx";
 import "../css/admin.css";
 
 const AdminLayout = () => {
+  const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
@@ -108,7 +110,22 @@ const AdminLayout = () => {
         </nav>
 
         <div className="admin-sidebar-footer">
-          <div className="admin-user">Owner</div>
+          <div className="admin-user-info">
+            <span className="admin-user-dot" title="Active Session" />
+            <div>
+              <span className="admin-user-title">{user?.name || "Owner"}</span>
+              <span className="admin-user-phone">{user?.phone || "7816096147"}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="admin-logout-btn"
+            onClick={logout}
+            title="Sign Out of Dashboard"
+          >
+            <span>🚪</span>
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 

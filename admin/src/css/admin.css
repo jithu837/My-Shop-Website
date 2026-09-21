@@ -72,7 +72,33 @@
 }
 
 .admin-sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(251,243,231,0.12); }
-.admin-user { font-family: var(--font-utility); font-size: 0.85rem; margin-bottom: 10px; }
+.admin-user-info { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.admin-user-dot { width: 8px; height: 8px; border-radius: 50%; background: #52c41a; box-shadow: 0 0 6px #52c41a; }
+.admin-user-title { font-family: var(--font-utility); font-size: 0.82rem; font-weight: 700; color: var(--color-cream); }
+.admin-user-phone { display: block; font-size: 0.72rem; color: var(--color-brass-light); }
+
+.admin-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(251, 243, 231, 0.08);
+  border: 1px solid rgba(251, 243, 231, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--color-cream);
+  font-family: var(--font-utility);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.admin-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ffb4b4;
+}
 
 .admin-main { flex: 1; padding: 32px; max-width: 100%; overflow-x: auto; color: var(--color-ink); }
 .admin-main h1 { margin-bottom: 24px; color: var(--color-maroon-deep); }

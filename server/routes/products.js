@@ -11,6 +11,7 @@ import {
   toggleProductStock,
 } from "../controllers/productController.js";
 import upload from "../middleware/upload.js";
+import { protectAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -20,11 +21,11 @@ router.get("/:id/image", getProductImage);   // serves legacy base64 images
 router.get("/:id/related", getRelatedProducts);
 router.get("/:id", getProductById);
 
-// Admin (login removed — direct access)
-router.post("/", upload.single("image"), createProduct);
-router.put("/:id", upload.single("image"), updateProduct);
-router.delete("/:id", deleteProduct);
-router.patch("/:id/toggle", toggleProductActive);
-router.patch("/:id/stock", toggleProductStock);
+// Admin (protected with JWT)
+router.post("/", protectAdmin, upload.single("image"), createProduct);
+router.put("/:id", protectAdmin, upload.single("image"), updateProduct);
+router.delete("/:id", protectAdmin, deleteProduct);
+router.patch("/:id/toggle", protectAdmin, toggleProductActive);
+router.patch("/:id/stock", protectAdmin, toggleProductStock);
 
 export default router;

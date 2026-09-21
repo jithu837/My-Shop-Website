@@ -9,7 +9,12 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
-const STREAM_URL = API_BASE ? `${API_BASE}/api/orders/stream` : "/api/orders/stream";
+
+const getStreamUrl = () => {
+  const token = localStorage.getItem("admin_token");
+  const baseUrl = API_BASE ? `${API_BASE}/api/orders/stream` : "/api/orders/stream";
+  return token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
+};
 
 /**
  * Subscribes to the server's SSE order stream.
@@ -27,7 +32,8 @@ const useOrderStream = (onNewOrder) => {
   }, [onNewOrder]);
 
   useEffect(() => {
-    const es = new EventSource(STREAM_URL);
+    const streamUrl = getStreamUrl();
+    const es = new EventSource(streamUrl);
 
     es.onmessage = (e) => {
       try {

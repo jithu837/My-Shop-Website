@@ -7,11 +7,11 @@ import { emitNewOrder, emitOrderUpdate } from "../utils/orderStream.js";
 const getRazorpayKeys = () => {
   let key_id = process.env.RAZORPAY_KEY_ID;
   let key_secret = process.env.RAZORPAY_KEY_SECRET;
-  if (!key_id || key_id === "rzp_live_TNlvVhOpmeyCHP") {
-    key_id = "rzp_live_Te0OeStHnJXmrQ";
+  if (!key_id || key_id === "rzp_live_TNlvVhOpmeyCHP" || key_id === "rzp_live_Te0OeStHnJXmrQ") {
+    key_id = "rzp_live_TeNmwwXU1U2ANK";
   }
-  if (!key_secret || key_secret === "tei6eatNhyc7qYlRkdTD3wBJ") {
-    key_secret = "cJAddNinA91W9cYOzosmRY5L";
+  if (!key_secret || key_secret === "tei6eatNhyc7qYlRkdTD3wBJ" || key_secret === "cJAddNinA91W9cYOzosmRY5L") {
+    key_secret = "fqu3NQ6nv7ACIsUzMyS4BeE6";
   }
   return { key_id, key_secret };
 };

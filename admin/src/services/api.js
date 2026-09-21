@@ -20,7 +20,20 @@ const api = axios.create({
   timeout: 55000, // 55s — Render free tier cold start can take up to 50s
 });
 
-// ── Retry interceptor ─────────────────────────────────────────────────────────
+// ── JWT Auth request interceptor ──────────────────────────────────────────────
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("admin_token");
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ── Retry & Auth response interceptor ─────────────────────────────────────────
 // Render free tier: server sleeps after 15 min, first request gets 502/503.
 // Automatically retry up to 3 times with increasing delay (2s, 4s, 6s).
 api.interceptors.response.use(
@@ -30,6 +43,15 @@ api.interceptors.response.use(
     if (!config) return Promise.reject(err);
 
     const status = err.response?.status;
+
+    // Handle token expiry or unauthorized
+    if (status === 401 && !config.url?.includes("/auth/login")) {
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_user");
+      window.dispatchEvent(new CustomEvent("admin:unauthorized"));
+      return Promise.reject(err);
+    }
+
     const isRetryable =
       !err.response || // network error / no response at all
       status === 502 ||

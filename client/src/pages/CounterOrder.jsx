@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import api from "../services/api.js";
+import { useSearchParams } from "react-router-dom";
+import api, { imageUrl } from "../services/api.js";
 import { useCart } from "../context/CartContext.jsx";
 import ProductCard from "../components/ProductCard.jsx";
+import GramSelector from "../components/GramSelector.jsx";
 import "../css/products.css";
 import "../css/counterorder.css";
 
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_Te0OeStHnJXmrQ";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_TeNmwwXU1U2ANK";
 
 const loadRazorpay = () =>
   new Promise((resolve, reject) => {
@@ -23,7 +25,9 @@ const CATEGORIES = ["All", "Sweets", "Hots", "Snacks", "Combo"];
 // Customers browse menu, add items to cart, and pay via real Razorpay
 // (UPI, Cards, NetBanking) or choose Cash at Counter.
 const CounterOrder = () => {
-  const { items, subtotal, lineTotal, clearCart } = useCart();
+  const { items, subtotal, lineTotal, clearCart, removeFromCart, updateGrams } = useCart();
+  const [searchParams] = useSearchParams();
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
@@ -35,6 +39,18 @@ const CounterOrder = () => {
   const [error, setError] = useState("");
   const [placedOrder, setPlacedOrder] = useState(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+
+  // If customer scans fresh counter QR code (?qr=1 / ?scan=1), start with an empty cart
+  useEffect(() => {
+    const isQr = searchParams.get("qr") === "1" || searchParams.get("scan") === "1";
+    if (isQr) {
+      const sessionKey = "chs_qr_session_active";
+      if (!sessionStorage.getItem(sessionKey)) {
+        clearCart();
+        sessionStorage.setItem(sessionKey, "true");
+      }
+    }
+  }, [searchParams, clearCart]);
 
   useEffect(() => {
     setLoading(true);
@@ -69,7 +85,7 @@ const CounterOrder = () => {
 
       // ── Real Razorpay Payment Gateway ──────────────────────────────────────
       await loadRazorpay();
-      const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_Te0OeStHnJXmrQ";
+      const razorpayKey = data.razorpayKeyId || RAZORPAY_KEY_ID || "rzp_live_TeNmwwXU1U2ANK";
 
       if (!razorpayKey || !data.razorpayOrder) {
         throw new Error("Razorpay gateway could not be initialized. Please try again.");
@@ -240,97 +256,156 @@ const CounterOrder = () => {
       <section className="section counter-page">
         <div className="container counter-pay">
           <div className="card counter-pay-card">
-            <span className="eyebrow">Your Counter Order</span>
-            <h2>Review &amp; Pay</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <div>
+                <span className="eyebrow">Your Counter Order</span>
+                <h2 style={{ margin: 0 }}>Review &amp; Pay</h2>
+              </div>
+              {items.length > 0 && (
+                <button
+                  type="button"
+                  className="counter-cart-clear-btn"
+                  style={{ color: "var(--color-danger)", borderColor: "rgba(163,52,31,0.3)" }}
+                  onClick={() => {
+                    if (window.confirm("Do you want to clear all items from your cart?")) {
+                      clearCart();
+                    }
+                  }}
+                  title="Clear All Items"
+                >
+                  🗑️ Clear Cart
+                </button>
+              )}
+            </div>
 
-            <div className="checkout-summary-row-list">
-              {items.map((i) => (
-                <div className="checkout-summary-row" key={i.productId}>
-                  <span>{i.name} ({i.grams}g)</span>
-                  <span>₹{lineTotal(i)}</span>
+            {items.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px 16px" }}>
+                <p style={{ color: "var(--color-ink-soft)", marginBottom: 16 }}>
+                  Your cart is currently empty.
+                </p>
+                <button className="btn btn-primary" onClick={() => setStep("browse")}>
+                  ← Browse Menu
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="checkout-summary-row-list">
+                  {items.map((i) => (
+                    <div className="counter-review-item" key={i.productId}>
+                      <div className="counter-review-item-left">
+                        <div className="counter-review-item-name">{i.name}</div>
+                        <div className="counter-review-item-rate">
+                          ₹{i.pricePerKg}/kg
+                        </div>
+                      </div>
+
+                      <div className="counter-review-item-center">
+                        <GramSelector
+                          grams={i.grams}
+                          onChange={(newGrams) => updateGrams(i.productId, newGrams)}
+                          step={i.stepGrams || 50}
+                          min={i.stepGrams || 50}
+                          max={i.maxOrderGrams || 2000}
+                        />
+                      </div>
+
+                      <div className="counter-review-item-right">
+                        <div className="counter-review-item-total">₹{lineTotal(i)}</div>
+                        <button
+                          type="button"
+                          className="counter-item-delete-btn"
+                          onClick={() => removeFromCart(i.productId)}
+                          title="Remove item"
+                        >
+                          🗑️ Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="cart-summary-total">
-              <span>Total Amount</span>
-              <span>₹{subtotal}</span>
-            </div>
 
-            <div className="form-group" style={{ marginTop: 20 }}>
-              <label>Your Name (Optional)</label>
-              <input
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Ramesh"
-              />
-            </div>
-            <div className="form-group">
-              <label>Mobile Number (For order status / receipts)</label>
-              <input
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                pattern="[0-9]{10}"
-                title="10 digit phone number"
-                placeholder="10 digit mobile number"
-              />
-            </div>
-
-            <h3 style={{ marginTop: 24, marginBottom: 12 }}>Choose Payment Method</h3>
-            <div className="checkout-payment-options">
-              <label className={`checkout-payment-option ${paymentMethod === "Razorpay" ? "is-selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="counterPayment"
-                  checked={paymentMethod === "Razorpay"}
-                  onChange={() => setPaymentMethod("Razorpay")}
-                />
-                <div>
-                  <strong style={{ display: "block" }}>⚡ Online Payment (Razorpay Live)</strong>
-                  <span style={{ fontSize: "0.8rem", color: "var(--color-ink-soft)" }}>
-                    UPI (Google Pay, PhonePe, Paytm, Navi), Cards &amp; NetBanking
-                  </span>
+                <div className="cart-summary-total">
+                  <span>Total Amount</span>
+                  <span>₹{subtotal}</span>
                 </div>
-              </label>
 
-              <label className={`checkout-payment-option ${paymentMethod === "Cash" ? "is-selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="counterPayment"
-                  checked={paymentMethod === "Cash"}
-                  onChange={() => setPaymentMethod("Cash")}
-                />
-                <div>
-                  <strong style={{ display: "block" }}>💵 Cash at Counter</strong>
-                  <span style={{ fontSize: "0.8rem", color: "var(--color-ink-soft)" }}>
-                    Pay with cash directly to the shopkeeper
-                  </span>
+                <div className="form-group" style={{ marginTop: 20 }}>
+                  <label>Your Name (Optional)</label>
+                  <input
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="e.g. Ramesh"
+                  />
                 </div>
-              </label>
-            </div>
+                <div className="form-group">
+                  <label>Mobile Number (For order status / receipts)</label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    pattern="[0-9]{10}"
+                    title="10 digit phone number"
+                    placeholder="10 digit mobile number"
+                  />
+                </div>
 
-            {error && <p className="checkout-error" style={{ marginTop: 16 }}>{error}</p>}
+                <h3 style={{ marginTop: 24, marginBottom: 12 }}>Choose Payment Method</h3>
+                <div className="checkout-payment-options">
+                  <label className={`checkout-payment-option ${paymentMethod === "Razorpay" ? "is-selected" : ""}`}>
+                    <input
+                      type="radio"
+                      name="counterPayment"
+                      checked={paymentMethod === "Razorpay"}
+                      onChange={() => setPaymentMethod("Razorpay")}
+                    />
+                    <div>
+                      <strong style={{ display: "block" }}>⚡ Online Payment (Razorpay Live)</strong>
+                      <span style={{ fontSize: "0.8rem", color: "var(--color-ink-soft)" }}>
+                        UPI (Google Pay, PhonePe, Paytm, Navi), Cards &amp; NetBanking
+                      </span>
+                    </div>
+                  </label>
 
-            <button
-              className="btn btn-primary checkout-submit"
-              disabled={placing}
-              onClick={placeOrder}
-              style={{ marginTop: 20, width: "100%", padding: "14px", fontSize: "1rem" }}
-            >
-              {placing
-                ? "Opening Razorpay..."
-                : paymentMethod === "Razorpay"
-                ? `Pay ₹${subtotal} with Razorpay`
-                : `Place Order (Pay ₹${subtotal} Cash)`}
-            </button>
+                  <label className={`checkout-payment-option ${paymentMethod === "Cash" ? "is-selected" : ""}`}>
+                    <input
+                      type="radio"
+                      name="counterPayment"
+                      checked={paymentMethod === "Cash"}
+                      onChange={() => setPaymentMethod("Cash")}
+                    />
+                    <div>
+                      <strong style={{ display: "block" }}>💵 Cash at Counter</strong>
+                      <span style={{ fontSize: "0.8rem", color: "var(--color-ink-soft)" }}>
+                        Pay with cash directly to the shopkeeper
+                      </span>
+                    </div>
+                  </label>
+                </div>
 
-            <button
-              className="btn btn-outline counter-back"
-              onClick={() => setStep("browse")}
-              style={{ marginTop: 10, width: "100%" }}
-            >
-              ← Back to Menu
-            </button>
+                {error && <p className="checkout-error" style={{ marginTop: 16 }}>{error}</p>}
+
+                <button
+                  className="btn btn-primary checkout-submit"
+                  disabled={placing}
+                  onClick={placeOrder}
+                  style={{ marginTop: 20, width: "100%", padding: "14px", fontSize: "1rem" }}
+                >
+                  {placing
+                    ? "Opening Razorpay..."
+                    : paymentMethod === "Razorpay"
+                    ? `Pay ₹${subtotal} with Razorpay`
+                    : `Place Order (Pay ₹${subtotal} Cash)`}
+                </button>
+
+                <button
+                  className="btn btn-outline counter-back"
+                  onClick={() => setStep("browse")}
+                  style={{ marginTop: 10, width: "100%" }}
+                >
+                  ← Back to Menu
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -376,12 +451,165 @@ const CounterOrder = () => {
         )}
       </div>
 
+      {/* Sticky Bottom Cart Bar */}
       {items.length > 0 && (
         <div className="counter-cart-bar">
-          <span>{items.length} item(s) · ₹{subtotal}</span>
-          <button className="btn btn-primary" onClick={() => setStep("pay")}>
-            Review &amp; Pay →
-          </button>
+          <div className="counter-cart-bar-left">
+            <span className="counter-cart-bar-count">{items.length} item(s) in cart</span>
+            <span className="counter-cart-bar-total">₹{subtotal}</span>
+          </div>
+
+          <div className="counter-cart-bar-actions">
+            <button
+              type="button"
+              className="counter-cart-view-btn"
+              onClick={() => setIsCartModalOpen(true)}
+              title="View items in cart"
+            >
+              <span>🛒 View Items</span>
+            </button>
+
+            <button
+              type="button"
+              className="counter-cart-clear-btn"
+              onClick={() => {
+                if (window.confirm("Do you want to clear your cart?")) {
+                  clearCart();
+                }
+              }}
+              title="Clear all cart items"
+            >
+              🗑️ Clear
+            </button>
+
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setIsCartModalOpen(false);
+                setStep("pay");
+              }}
+            >
+              Review &amp; Pay →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-up Cart Drawer Modal */}
+      {isCartModalOpen && (
+        <div className="counter-drawer-overlay" onClick={() => setIsCartModalOpen(false)}>
+          <div className="counter-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="counter-drawer-header">
+              <h3 className="counter-drawer-title">
+                Your Counter Cart ({items.length})
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  className="counter-cart-clear-btn"
+                  style={{ color: "var(--color-danger)", borderColor: "rgba(163,52,31,0.3)" }}
+                  onClick={() => {
+                    if (window.confirm("Do you want to clear all items from your cart?")) {
+                      clearCart();
+                      setIsCartModalOpen(false);
+                    }
+                  }}
+                >
+                  🗑️ Clear All
+                </button>
+                <button
+                  type="button"
+                  className="counter-drawer-close"
+                  onClick={() => setIsCartModalOpen(false)}
+                  aria-label="Close cart"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="counter-drawer-body">
+              {items.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--color-ink-soft)", padding: "20px 0" }}>
+                  Your cart is empty.
+                </p>
+              ) : (
+                items.map((item) => (
+                  <div className="counter-drawer-item" key={item.productId}>
+                    <img
+                      src={imageUrl({
+                        _id: item.productId,
+                        image: item.image,
+                        hasLegacyImage: item.hasLegacyImage || !item.image,
+                      })}
+                      alt={item.name}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/placeholder-sweet.svg";
+                      }}
+                    />
+                    <div className="counter-drawer-item-details">
+                      <div className="counter-drawer-item-name">{item.name}</div>
+                      <div className="counter-drawer-item-price">
+                        ₹{item.pricePerKg} / kg
+                      </div>
+                      <div style={{ marginTop: 6 }}>
+                        <GramSelector
+                          grams={item.grams}
+                          onChange={(g) => updateGrams(item.productId, g)}
+                          step={item.stepGrams || 50}
+                          min={item.stepGrams || 50}
+                          max={item.maxOrderGrams || 2000}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="counter-drawer-item-actions">
+                      <div className="counter-drawer-item-total">₹{lineTotal(item)}</div>
+                      <button
+                        type="button"
+                        className="counter-item-delete-btn"
+                        onClick={() => removeFromCart(item.productId)}
+                        title="Remove from cart"
+                      >
+                        🗑️ Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {items.length > 0 && (
+              <div className="counter-drawer-footer">
+                <div className="counter-drawer-footer-total">
+                  <span>Grand Total:</span>
+                  <span>₹{subtotal}</span>
+                </div>
+                <div className="counter-drawer-footer-btns">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    style={{ flex: 1 }}
+                    onClick={() => setIsCartModalOpen(false)}
+                  >
+                    + Add More Items
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ flex: 1.4 }}
+                    onClick={() => {
+                      setIsCartModalOpen(false);
+                      setStep("pay");
+                    }}
+                  >
+                    Review &amp; Pay →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

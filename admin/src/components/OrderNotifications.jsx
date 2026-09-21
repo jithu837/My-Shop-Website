@@ -77,14 +77,10 @@ const speakText = (text) => {
 
 // ── Main speak export (called from AdminLayout) ───────────────────────────────
 export const speak = (order) => {
-  if (!audioUnlocked) return; // silently ignore if not unlocked yet
+  if (!audioUnlocked) return;
   playDing();
   const token = order.tokenNumber || order.orderNumber;
-  const name =
-    order.customerName && order.customerName !== "Walk-in Customer"
-      ? `from ${order.customerName}.`
-      : "";
-  const text = `Token number ${token}. New order ${name} Total rupees ${order.total}. First in line.`;
+  const text = `Order received. Token number ${token}. Amount ${order.total} rupees.`;
   setTimeout(() => speakText(text), 700);
 };
 
@@ -148,7 +144,7 @@ const NotifCard = ({ order, queueIndex = 0, queueLength, nextOrder, onDismiss, o
           <div className="notif-badge" style={{ fontSize: "0.95rem" }}>
             <span className="notif-badge-icon">🔔</span>
             <span style={{ color: "#4ade80", fontWeight: 800 }}>
-              {queueIndex === 0 ? "👉 #1 IN QUEUE (FIRST IN, FIRST OUT)" : `#${queueIndex + 1} In Queue`}
+              New Order
             </span>
           </div>
           <button className="notif-close" onClick={dismiss} aria-label="Dismiss">✕</button>
@@ -261,9 +257,9 @@ const OrderNotifications = ({ orders, isOpen, onClose, onDismiss, onConfirm }) =
       <div className="notif-drawer" role="status" aria-live="polite">
         <div className="notif-drawer-header">
           <div>
-            <h3 style={{ margin: 0, fontSize: "1.35rem" }}>FIFO Order Queue</h3>
+            <h3 style={{ margin: 0, fontSize: "1.35rem" }}>Order Queue</h3>
             <small style={{ color: "rgba(251,243,231,0.7)", fontSize: "0.85rem" }}>
-              First-In, First-Out · {orders.length} order{orders.length === 1 ? "" : "s"} waiting
+              {orders.length} order{orders.length === 1 ? "" : "s"} waiting
             </small>
           </div>
           <button className="notif-drawer-close" onClick={onClose}>✕</button>
@@ -292,10 +288,7 @@ const OrderNotifications = ({ orders, isOpen, onClose, onDismiss, onConfirm }) =
             <div style={{ marginTop: "24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                 <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--color-brass-light)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  ⏳ Next In Line ({orders.length - 1} waiting)
-                </span>
-                <span style={{ fontSize: "0.8rem", color: "rgba(251,243,231,0.6)" }}>
-                  Strict Order Sequence
+                  ⏳ Next Orders ({orders.length - 1} waiting)
                 </span>
               </div>
 

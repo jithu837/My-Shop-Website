@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import useOrderStream from "../hooks/useOrderStream.js";
-import OrderNotifications, { speak, AudioUnlockBanner } from "../components/OrderNotifications.jsx";
+import OrderNotifications, { speak, unlockAudio } from "../components/OrderNotifications.jsx";
 import api from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../css/admin.css";
@@ -10,6 +10,14 @@ const AdminLayout = () => {
   const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  // Auto-unlock audio on first user interaction so voice plays without a manual tap
+  useEffect(() => {
+    const unlock = () => { unlockAudio(); document.removeEventListener("click", unlock); document.removeEventListener("keydown", unlock); };
+    document.addEventListener("click", unlock, { once: true });
+    document.addEventListener("keydown", unlock, { once: true });
+    return () => { document.removeEventListener("click", unlock); document.removeEventListener("keydown", unlock); };
+  }, []);
 
   // useCallback keeps the reference stable so useOrderStream never re-subscribes.
   const handleNewOrder = useCallback((order) => {
@@ -64,8 +72,6 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-shell">
-      {/* Audio unlock banner — must be tapped once to enable voice alerts */}
-      <AudioUnlockBanner />
 
       {/* Real-time order notification cards */}
       <OrderNotifications 
@@ -100,13 +106,7 @@ const AdminLayout = () => {
             🔔 Queue ({notifications.length})
           </button>
 
-          <button 
-            className="admin-nav-notif" 
-            style={{ marginTop: '4px', textAlign: 'left', opacity: 0.8 }}
-            onClick={() => speak({ orderNumber: "Test", total: 0, customerName: "Test" })}
-          >
-            🔊 Test Sound
-          </button>
+
         </nav>
 
         <div className="admin-sidebar-footer">
